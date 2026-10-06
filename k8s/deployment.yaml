@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: demo-api
+  namespace: demo
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: demo-api
+  template:
+    metadata:
+      labels:
+        app: demo-api
+    spec:
+      imagePullSecrets:
+        - name: ghcr
+      containers:
+        - name: api
+          # replaced by the pipeline with the image built for the commit
+          image: IMAGE_PLACEHOLDER
+          ports:
+            - containerPort: 8000
+          # OLLAMA_URL, CHAT_MODEL: where the LLM is depends on the environment
+          envFrom:
+            - configMapRef:
+                name: llm-config
+          env:
+            - name: MCP_URL
+              value: http://docs-mcp:8001/mcp
+          lifecycle:
+            preStop:
+              # keep serving for a moment while Kubernetes and the ingress stop sending
+              # traffic to this pod: without it a rollout drops a few requests
+              sleep:
+                seconds: 5
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8000
+            initialDelaySeconds: 3
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8000
+            initialDelaySeconds: 10
+          resources:
+            requests:
+              cpu: 50m
+              memory: 96Mi
+            limits:
+              memory: 256Mi

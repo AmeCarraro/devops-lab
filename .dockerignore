@@ -1,0 +1,9 @@
+.git
+.venv
+infra
+k8s
+# holds the admin kubeconfig of the local cluster
+local
+runner
+tests
+**/__pycache__

@@ -1,0 +1,60 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: docs-mcp
+  namespace: demo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: docs-mcp
+  template:
+    metadata:
+      labels:
+        app: docs-mcp
+    spec:
+      imagePullSecrets:
+        - name: ghcr
+      containers:
+        - name: mcp
+          # replaced by the pipeline with the image built for the commit
+          image: MCP_IMAGE_PLACEHOLDER
+          ports:
+            - containerPort: 8001
+          # OLLAMA_URL, EMBED_MODEL
+          envFrom:
+            - configMapRef:
+                name: llm-config
+          lifecycle:
+            preStop:
+              # same reason as in the agent: no dropped requests during a rollout
+              sleep:
+                seconds: 5
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8001
+            initialDelaySeconds: 3
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8001
+            initialDelaySeconds: 10
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              memory: 256Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: docs-mcp
+  namespace: demo
+spec:
+  selector:
+    app: docs-mcp
+  ports:
+    - port: 8001
+      targetPort: 8001

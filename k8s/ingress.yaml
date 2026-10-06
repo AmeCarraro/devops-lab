@@ -1,0 +1,26 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: demo-api
+  namespace: demo
+spec:
+  # Traefik ships with k3s and listens on port 80 of the node
+  ingressClassName: traefik
+  rules:
+    - http:
+        paths:
+          # the MCP server, for clients outside the cluster (e.g. Claude Code)
+          - path: /mcp
+            pathType: Prefix
+            backend:
+              service:
+                name: docs-mcp
+                port:
+                  number: 8001
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: demo-api
+                port:
+                  number: 80

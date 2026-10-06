@@ -1,0 +1,12 @@
+__pycache__/
+.venv/
+.pytest_cache/
+
+# admin credentials of the local cluster
+local/kubeconfig/
+
+# Terraform: state and tfvars can contain secrets / personal data
+.terraform/
+*.tfstate
+*.tfstate.*
+terraform.tfvars

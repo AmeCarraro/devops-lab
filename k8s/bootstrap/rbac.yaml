@@ -1,0 +1,42 @@
+# Applied once by hand as cluster admin, before installing the runner.
+# CI jobs run in the arc-runners namespace as "deployer", which can only
+# touch the resources below in the demo namespace: no cluster-admin for CI.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: demo
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: arc-runners
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: deployer
+  namespace: arc-runners
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: deployer
+  namespace: demo
+rules:
+  - apiGroups: ["", "apps", "networking.k8s.io"]
+    resources: ["deployments", "replicasets", "pods", "services", "secrets", "configmaps", "ingresses"]
+    verbs: ["get", "list", "watch", "create", "update", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: deployer
+  namespace: demo
+subjects:
+  - kind: ServiceAccount
+    name: deployer
+    namespace: arc-runners
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: deployer

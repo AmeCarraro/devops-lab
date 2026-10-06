@@ -1,0 +1,26 @@
+# Values for the gha-runner-scale-set Helm chart (Actions Runner Controller).
+# Install it with the release name "k3s": the release name is the label that
+# the deploy job selects with "runs-on: k3s".
+#
+# githubConfigUrl (the address of the repository) is passed with --set at install time.
+# The token is not in this file: it lives in a Kubernetes secret created by hand.
+githubConfigSecret: github-runner-token
+
+# No runner pod while idle: one is created for each job and deleted when the job ends
+minRunners: 0
+maxRunners: 1
+
+template:
+  spec:
+    # the steps of a job run as this account (see k8s/bootstrap/rbac.yaml)
+    serviceAccountName: deployer
+    containers:
+      - name: runner
+        image: ghcr.io/actions/actions-runner:latest
+        command: ["/home/runner/run.sh"]
+        resources:
+          requests:
+            cpu: 100m
+            memory: 256Mi
+          limits:
+            memory: 1Gi

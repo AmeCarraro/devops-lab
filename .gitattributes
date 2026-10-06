@@ -1,0 +1,2 @@
+# user_data runs on Linux: CRLF would break the shebang
+*.sh text eol=lf

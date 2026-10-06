@@ -1,0 +1,103 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# What the token of every job may do, unless the job asks for more
+permissions:
+  contents: read
+
+defaults:
+  run:
+    # explicit bash also means "-o pipefail": a failure on the left of a pipe fails the step
+    shell: bash
+
+env:
+  KUBECTL_VERSION: v1.34.1
+
+jobs:
+  # test + build run on GitHub's own runners
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements-dev.txt
+      - run: pytest
+
+  build:
+    needs: test
+    # pull requests are only tested: images are built from the main branch
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v7
+      # ghcr.io wants lowercase names, and a GitHub user name can contain capitals
+      - run: echo "IMAGES=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_ENV"
+      - uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - run: |
+          docker build --build-arg APP_VERSION="${GITHUB_SHA::7}" -t "$IMAGES/agent:$GITHUB_SHA" .
+          docker build -f mcp-server/Dockerfile -t "$IMAGES/docs-mcp:$GITHUB_SHA" .
+          docker push "$IMAGES/agent:$GITHUB_SHA"
+          docker push "$IMAGES/docs-mcp:$GITHUB_SHA"
+
+  # deploy runs on our own runner inside the k3s cluster ("k3s" is the name of the runner scale set).
+  # kubectl authenticates with the service account of the runner pod, so no kubeconfig
+  # is stored in GitHub and the Kubernetes API is never exposed to the internet.
+  deploy:
+    needs: build
+    # skipped until the runner is installed and the repository variable OLLAMA_URL is set
+    if: vars.OLLAMA_URL != ''
+    runs-on: k3s
+    # one deploy at a time: a second push waits for the first rollout
+    concurrency: deploy
+    permissions:
+      contents: read
+      packages: read
+    env:
+      # Repository variables (Settings - Secrets and variables - Actions - Variables).
+      # OLLAMA_URL has no default: it is the address of Ollama as seen from the pods of that cluster.
+      OLLAMA_URL: ${{ vars.OLLAMA_URL }}
+      CHAT_MODEL: ${{ vars.CHAT_MODEL || 'granite4.1:3b' }}
+      EMBED_MODEL: ${{ vars.EMBED_MODEL || 'nomic-embed-text' }}
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install kubectl
+        run: |
+          mkdir -p "$HOME/bin"
+          curl -fsSLo "$HOME/bin/kubectl" "https://dl.k8s.io/release/${KUBECTL_VERSION}/bin/linux/amd64/kubectl"
+          chmod +x "$HOME/bin/kubectl"
+          echo "$HOME/bin" >> "$GITHUB_PATH"
+      - name: Deploy
+        env:
+          # Valid only while this job runs: enough for the cluster to pull the images
+          # during the rollout, and no long-lived registry password is left in the cluster
+          REGISTRY_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          IMAGES="ghcr.io/${GITHUB_REPOSITORY,,}"
+          kubectl -n demo create secret docker-registry ghcr \
+            --docker-server=ghcr.io \
+            --docker-username="$GITHUB_ACTOR" \
+            --docker-password="$REGISTRY_TOKEN" \
+            --dry-run=client -o yaml | kubectl apply -f -
+          kubectl -n demo create configmap llm-config \
+            --from-literal=OLLAMA_URL="$OLLAMA_URL" \
+            --from-literal=CHAT_MODEL="$CHAT_MODEL" \
+            --from-literal=EMBED_MODEL="$EMBED_MODEL" \
+            --dry-run=client -o yaml | kubectl apply -f -
+          sed "s|IMAGE_PLACEHOLDER|$IMAGES/agent:$GITHUB_SHA|" k8s/deployment.yaml | kubectl apply -f -
+          sed "s|MCP_IMAGE_PLACEHOLDER|$IMAGES/docs-mcp:$GITHUB_SHA|" k8s/docs-mcp.yaml | kubectl apply -f -
+          kubectl apply -f k8s/service.yaml -f k8s/ingress.yaml
+          kubectl -n demo rollout status deployment/docs-mcp --timeout=180s
+          kubectl -n demo rollout status deployment/demo-api --timeout=180s

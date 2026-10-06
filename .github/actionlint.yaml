@@ -1,0 +1,4 @@
+# Tells actionlint that "k3s" is the label of our self-hosted runner scale set
+self-hosted-runner:
+  labels:
+    - k3s
