@@ -13,6 +13,15 @@ The pipeline is a GitHub Actions workflow, `.github/workflows/ci.yml`, with four
 
 Build and deploy run only for a push to `main`. A pull request is only tested. The deploy job is skipped until the repository variable `OLLAMA_URL` is set, so the pipeline is green before a runner exists.
 
+## Building the desktop app
+
+A second workflow, `.github/workflows/desktop.yml`, builds the Windows application. It does not run at a push. It is started by hand: Actions, desktop, Run workflow. A Windows build takes several minutes, and on a private repository its minutes count double against the free quota.
+
+1. **test**: on Linux, runs `cargo clippy` and `cargo test` on the native code.
+2. **windows**: on a Windows runner hosted by GitHub, builds the page for the desktop, compiles the native side and makes the installer.
+
+The result is an artifact named `ask-the-docs-windows`, at the bottom of the page of the run. It contains the plain executable and an installer. The executable is not signed, so Windows shows a warning the first time it is started.
+
 ## What the pipeline needs in GitHub
 
 - A repository variable `OLLAMA_URL` with the address of Ollama as seen from the pods. It is set in Settings, Secrets and variables, Actions, Variables. Setting it is what turns the deploy job on. `CHAT_MODEL` and `EMBED_MODEL` are optional variables with a default.

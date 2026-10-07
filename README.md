@@ -5,6 +5,7 @@ A small agent platform, built to learn how AI workloads are deployed and operate
 | Part | Where | What it is |
 |---|---|---|
 | Web page | `web/` | TypeScript and React. Shows the steps of the agent live, the answer while it is written, and can stop a run. |
+| Desktop app | `web/src-tauri/` | Rust and Tauri. The same page as a Windows application, plus a native reading of the GPU. |
 | Agent | `app/` | Python and FastAPI. A small local model searches the documentation in a research loop of tool calls, then answers with its sources. |
 | MCP server | `mcp-server/` | Search by meaning and by name, exposed over the Model Context Protocol. |
 | Kubernetes | `k8s/`, `local/` | Manifests for both services and a k3s cluster that runs inside Docker. |

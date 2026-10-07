@@ -30,6 +30,10 @@ export type AgentEvent =
 
 export type Info = { version: string; pod: string; model: string }
 
+// In the browser the page and the API share one address, so paths are enough.
+// The desktop app is not served by the cluster and needs the full address (web/.env.desktop).
+const BASE: string = import.meta.env.VITE_API_BASE ?? ''
+
 /**
  * Turns a stream of bytes into the JSON values it carries, one per line.
  * A chunk can end in the middle of a line, or even of a character, so the
@@ -65,7 +69,7 @@ async function* chunksOf(body: ReadableStream<Uint8Array>): AsyncGenerator<Uint8
 
 /** Asks a question and yields the events of the run. Aborting `signal` stops the run on the server too. */
 export async function* askStream(question: string, signal: AbortSignal): AsyncGenerator<AgentEvent> {
-  const response = await fetch('/api/ask/stream', {
+  const response = await fetch(`${BASE}/api/ask/stream`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ question }),
@@ -78,7 +82,7 @@ export async function* askStream(question: string, signal: AbortSignal): AsyncGe
 }
 
 export async function fetchInfo(): Promise<Info> {
-  const response = await fetch('/api/info')
+  const response = await fetch(`${BASE}/api/info`)
   if (!response.ok) throw new Error(`The server answered ${response.status}`)
   return (await response.json()) as Info
 }

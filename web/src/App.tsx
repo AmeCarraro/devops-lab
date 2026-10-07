@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react'
 import type { KeyboardEvent } from 'react'
 import { askStream, fetchInfo } from './api.ts'
 import type { Info, Step, Summary } from './api.ts'
+import { gigabytes, gpuStatus, isDesktop, shortName } from './desktop.ts'
+import type { Gpu } from './desktop.ts'
 import { splitBlocks, splitInline } from './markdown.ts'
 
 /** One question and everything the agent did for it. */
@@ -132,6 +134,45 @@ function RunCard({ run }: { run: Run }) {
   )
 }
 
+/** Only in the desktop app: how busy the graphics card is, read by the native side every two seconds. */
+function GpuMeter() {
+  const [gpu, setGpu] = useState<Gpu | null>(null)
+
+  useEffect(() => {
+    let mounted = true
+    function read() {
+      gpuStatus()
+        .then((value) => {
+          if (mounted) setGpu(value)
+        })
+        .catch(() => {
+          if (mounted) setGpu(null)
+        })
+    }
+    read()
+    const timer = setInterval(read, 2000)
+    return () => {
+      mounted = false
+      clearInterval(timer)
+    }
+  }, [])
+
+  if (!gpu) return null
+  return (
+    <p className="gpu" title={gpu.name}>
+      {shortName(gpu.name)} · {gigabytes(gpu.memory_used_mb)} / {gigabytes(gpu.memory_total_mb)} GB ·{' '}
+      {gpu.utilization_percent}%
+      <meter
+        aria-label="Video memory in use"
+        min={0}
+        max={gpu.memory_total_mb}
+        high={gpu.memory_total_mb * 0.92}
+        value={gpu.memory_used_mb}
+      />
+    </p>
+  )
+}
+
 export default function App() {
   const [runs, setRuns] = useState<Run[]>([])
   const [question, setQuestion] = useState('')
@@ -216,7 +257,10 @@ export default function App() {
     <div className="page">
       <header className="top">
         <h1>Ask the docs</h1>
-        <p className="meta">{info ? `${info.model} · version ${info.version}` : 'connecting…'}</p>
+        <div className="status">
+          <p className="meta">{info ? `${info.model} · version ${info.version}` : 'connecting…'}</p>
+          {isDesktop && <GpuMeter />}
+        </div>
       </header>
 
       <main className="runs">

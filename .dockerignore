@@ -9,3 +9,5 @@ tests
 **/__pycache__
 web/node_modules
 web/dist
+# the native side of the desktop app is not part of the web image
+web/src-tauri

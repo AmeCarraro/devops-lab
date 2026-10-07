@@ -21,6 +21,30 @@ def test_info_reports_version_and_model(monkeypatch):
     assert response.json()["model"] == main.CHAT_MODEL
 
 
+def preflight(origin):
+    """What a browser engine sends before a POST from a page on another address."""
+    return client.options(
+        "/api/ask/stream",
+        headers={
+            "Origin": origin,
+            "Access-Control-Request-Method": "POST",
+            "Access-Control-Request-Headers": "content-type",
+        },
+    )
+
+
+def test_the_desktop_app_may_call_the_api():
+    response = preflight("http://tauri.localhost")
+    assert response.status_code == 200
+    assert response.headers["access-control-allow-origin"] == "http://tauri.localhost"
+
+
+def test_a_page_on_another_site_may_not_call_the_api():
+    response = preflight("https://example.com")
+    assert response.status_code == 400
+    assert "access-control-allow-origin" not in response.headers
+
+
 def test_ask_returns_the_summary(monkeypatch):
     async def fake_ask(question):
         return {"answer": f"You asked: {question}", "sources": []}

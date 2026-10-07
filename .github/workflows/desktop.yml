@@ -1,0 +1,64 @@
+name: desktop
+
+# Builds the Windows app. Started by hand from the Actions page (Run workflow):
+# a Windows build takes several minutes, and on a private repository its minutes
+# count double against the free quota, so it does not run at every push.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  # The native code is tested on Linux, where minutes are cheaper
+  test:
+    # pinned: the list of system packages below is the one for this release
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - name: Libraries Tauri compiles against
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libwebkit2gtk-4.1-dev build-essential curl wget file libxdo-dev libssl-dev \
+            libayatana-appindicator3-dev librsvg2-dev
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: web/src-tauri
+      # Tauri embeds the built page at compile time, so the folder has to exist
+      - run: mkdir -p web/dist
+      - run: cargo clippy -- -D warnings
+        working-directory: web/src-tauri
+      - run: cargo test
+        working-directory: web/src-tauri
+
+  windows:
+    needs: test
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      # the first build compiles a few hundred crates: keep them for the next one
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: web/src-tauri
+      - run: npm ci
+        working-directory: web
+      # builds the page for the desktop (web/.env.desktop), compiles the native side, makes the installer
+      - run: npm run tauri build
+        working-directory: web
+      - uses: actions/upload-artifact@v7
+        with:
+          name: ask-the-docs-windows
+          path: |
+            web/src-tauri/target/release/ask-the-docs.exe
+            web/src-tauri/target/release/bundle/nsis/*.exe
+          if-no-files-found: error

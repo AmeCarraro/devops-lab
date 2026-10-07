@@ -61,6 +61,19 @@ Node.js is not installed on the PC: `npm.ps1` runs npm in a container, inside `w
 
 `run dev` serves the page on http://127.0.0.1:5173 and reloads it when a file in `web/src` changes. The API still comes from the local cluster, so the cluster must be running.
 
+## Work on the desktop app
+
+Rust is not installed on the PC: `cargo.ps1` runs cargo in a container, inside `web/src-tauri`.
+
+```powershell
+.\cargo.ps1 test
+.\cargo.ps1 clippy
+```
+
+The first run builds the container image and compiles Tauri, which takes several minutes. Later runs take seconds. This checks and tests the native code on Linux. The Windows application is built on GitHub by the workflow `desktop`, because a window cannot be opened from a container.
+
+To run the app with live reload, `npm run tauri dev`, Rust and the Microsoft C++ build tools must be installed on the PC.
+
 ## Use the MCP server from another client
 
 The MCP endpoint is http://127.0.0.1:8080/mcp. To add it to Claude Code:

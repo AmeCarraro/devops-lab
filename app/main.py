@@ -4,6 +4,7 @@ import os
 import socket
 
 from fastapi import APIRouter, FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
@@ -15,6 +16,17 @@ logger = logging.getLogger("uvicorn.error")
 # the web page at / and this service next to it
 app = FastAPI(title="devops-lab", docs_url="/api/docs", openapi_url="/api/openapi.json", redoc_url=None)
 api = APIRouter(prefix="/api")
+
+# The page of the desktop app is not served from this address, so the browser engine
+# inside it asks for permission before calling the API. These are the origins Tauri uses;
+# a page on any other site is still refused.
+DESKTOP_ORIGINS = "http://tauri.localhost,https://tauri.localhost,tauri://localhost"
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=os.getenv("CORS_ORIGINS", DESKTOP_ORIGINS).split(","),
+    allow_methods=["GET", "POST"],
+    allow_headers=["Content-Type"],
+)
 
 
 class Question(BaseModel):

@@ -62,6 +62,19 @@ Closing the connection stops the run: the agent makes no further calls and the m
 
 `GET /api/info` returns the version of the agent, which is the commit it was built from, and the name of the chat model. The page shows both at the top.
 
+## The desktop app
+
+The same page also runs as a Windows application, built with Tauri (`web/src-tauri/`). A Tauri app has two halves:
+
+- the page, shown in a window by the browser engine that Windows already has (WebView2), so the application does not carry a browser of its own;
+- a native program written in Rust, which can do what a page in a browser is not allowed to do.
+
+The page calls functions of the native side by name. These functions are called commands. This app has one command, `gpu_status`: it runs `nvidia-smi` and returns the name of the graphics card, the video memory in use and the load. The page shows them at the top and refreshes them every two seconds, so the work of the model on the GPU is visible while it answers.
+
+What the window may ask the native side is declared in `web/src-tauri/capabilities/default.json`. The content security policy in `web/src-tauri/tauri.conf.json` lets the page connect only to the agent at `http://127.0.0.1:8080`.
+
+The desktop app does not contain the agent. It calls the same API as the page in the browser, at the address written in `web/.env.desktop`. The agent accepts these calls because it allows the origins that Tauri uses; the list is in the environment variable `CORS_ORIGINS`.
+
 ## Why MCP
 
 The agent does not import the search code. It discovers the tools at runtime from the MCP server, together with the instructions of the server on how to use them, so adding a capability means deploying a new tool on an MCP server, without touching the agent. The same server also works with other MCP clients, for example Claude Code.

@@ -1,0 +1,26 @@
+[package]
+name = "ask-the-docs"
+version = "0.1.0"
+description = "Desktop app of the devops-lab documentation assistant"
+edition = "2021"
+
+[lib]
+# The `_lib` suffix keeps the library name different from the binary name,
+# which Cargo needs on Windows: https://github.com/rust-lang/cargo/issues/8519
+name = "ask_the_docs_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+serde = { version = "1", features = ["derive"] }
+
+# Smaller executable: https://tauri.app/concept/size/#cargo-configuration
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = 3
+panic = "abort"
+strip = true
