@@ -49,7 +49,16 @@ def script(monkeypatch, replies, language="English"):
         seen.append({"messages": list(messages), "tools": tools})
         return replies[len(seen) - 1]
 
+    async def fake_chat_stream(messages, max_tokens):
+        # the answer arrives in two pieces, like tokens from a real model
+        seen.append({"messages": list(messages), "tools": []})
+        content = replies[len(seen) - 1]["content"]
+        for piece in (content[: len(content) // 2], content[len(content) // 2:]):
+            if piece:
+                yield piece
+
     monkeypatch.setattr(agent, "chat", fake_chat)
+    monkeypatch.setattr(agent, "chat_stream", fake_chat_stream)
     return seen
 
 
@@ -102,6 +111,21 @@ def test_finish_leaves_the_loop_and_the_answer_is_written_from_the_excerpts(monk
     assert seen[-1]["tools"] == []
 
 
+def test_research_reports_every_step_then_the_answer_in_pieces_then_a_summary(monkeypatch):
+    script(monkeypatch, [search("stop cluster"), search("cost"), finish(), says("Run docker compose stop [1].")])
+
+    async def collect():
+        return [event async for event in agent.research("How do I stop it?", make_server())]
+
+    events = asyncio.run(collect())
+
+    assert [event["type"] for event in events] == ["step", "step", "step", "sources", "answer", "answer", "done"]
+    assert events[0] == {"type": "step", "tool": "search_docs", "arguments": {"query": "stop cluster"}, "new_excerpts": 1}
+    assert events[3]["sources"] == ["docs/runbook.md#stop", "docs/aws.md#cost"]
+    pieces = [event["text"] for event in events if event["type"] == "answer"]
+    assert "".join(pieces) == events[-1]["answer"] == "Run docker compose stop [1]."
+
+
 def test_answer_is_requested_in_the_language_of_the_question(monkeypatch):
     seen = script(monkeypatch, [search("stop"), search("cost"), finish(), says("Ecco.")], language="Italian")
 
@@ -118,7 +142,8 @@ def test_finish_is_refused_until_the_model_has_searched_twice(monkeypatch):
     assert last_tool_result(seen[1]) == agent.TOO_EARLY
     assert last_tool_result(seen[3]) == agent.TOO_EARLY
     assert reply["finished_by"] == "finish"
-    assert len(reply["steps"]) == 5
+    # the trace says which calls were turned down, and the accepted finish is not marked
+    assert [step.get("refused") for step in reply["steps"]] == ["too_early", None, "too_early", None, None]
 
 
 def test_finish_with_something_missing_sends_the_model_back_to_search(monkeypatch):
@@ -129,6 +154,7 @@ def test_finish_with_something_missing_sends_the_model_back_to_search(monkeypatc
     reply = run()
 
     assert last_tool_result(seen[3]) == agent.NOT_YET.format(missing="the cost per hour")
+    assert reply["steps"][2]["refused"] == "missing"
     assert reply["sources"] == ["docs/runbook.md#stop", "docs/aws.md#cost"]
     assert reply["finished_by"] == "finish"
 
@@ -158,10 +184,11 @@ def test_same_query_in_another_word_order_is_not_executed_twice(monkeypatch):
     seen = script(monkeypatch, [search("Stop Cluster"), search("cluster stop"), says(""), says("Done.")])
     queries = []
 
-    run(queries=queries)
+    reply = run(queries=queries)
 
     assert queries == ["Stop Cluster"]
     assert last_tool_result(seen[2]) == agent.REPEATED
+    assert reply["steps"][1]["refused"] == "repeated"
 
 
 def test_excerpts_already_read_are_not_shown_again(monkeypatch):

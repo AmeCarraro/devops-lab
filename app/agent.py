@@ -98,21 +98,39 @@ class Notes:
     chars: int = 0
 
 
-async def chat(messages: list[dict], tools: list[dict], max_tokens: int, schema: dict | None = None) -> dict:
-    """One call to the LLM. With `schema`, the reply is JSON that is guaranteed to match it."""
-    payload = {
+def _payload(messages: list[dict], tools: list[dict], max_tokens: int, stream: bool) -> dict:
+    return {
         "model": CHAT_MODEL,
         "messages": messages,
         "tools": tools,
-        "stream": False,
+        "stream": stream,
         "options": {"temperature": 0, "num_ctx": NUM_CTX, "num_predict": max_tokens},
     }
+
+
+async def chat(messages: list[dict], tools: list[dict], max_tokens: int, schema: dict | None = None) -> dict:
+    """One call to the LLM. With `schema`, the reply is JSON that is guaranteed to match it."""
+    payload = _payload(messages, tools, max_tokens, stream=False)
     if schema:
         payload["format"] = schema
     async with httpx2.AsyncClient(timeout=180) as client:
         response = await client.post(f"{OLLAMA_URL}/api/chat", json=payload)
         response.raise_for_status()
         return response.json()["message"]
+
+
+async def chat_stream(messages: list[dict], max_tokens: int):
+    """Like chat, without tools: yields the reply piece by piece while the model writes it."""
+    payload = _payload(messages, [], max_tokens, stream=True)
+    async with httpx2.AsyncClient(timeout=180) as client:
+        # leaving this block early (the caller stopped listening) closes the connection,
+        # and Ollama stops generating
+        async with client.stream("POST", f"{OLLAMA_URL}/api/chat", json=payload) as response:
+            response.raise_for_status()
+            async for line in response.aiter_lines():
+                piece = json.loads(line)["message"]["content"] if line else ""
+                if piece:
+                    yield piece
 
 
 async def _language(question: str) -> str:
@@ -188,7 +206,12 @@ async def _run_tool(mcp: Client, name: str, arguments: dict, notes: Notes) -> tu
     return _excerpts(data, notes)
 
 
-async def ask(question: str, mcp_server=MCP_URL) -> dict:
+async def research(question: str, mcp_server=MCP_URL):
+    """The whole run as a stream of events, so that a client can show progress and stop it.
+
+    In order: one "step" for every tool call, "sources", the answer in "answer"
+    pieces while the model writes it, and a final "done" with the summary of everything.
+    """
     started = time.perf_counter()
     notes = Notes()
     steps: list[dict] = []
@@ -226,36 +249,54 @@ async def ask(question: str, mcp_server=MCP_URL) -> dict:
                 missing = _missing(arguments)
                 if len(made) >= MIN_SEARCHES and not missing:
                     finished_by = "finish"
+                    yield {"type": "step", **step}
                     break
                 # leaving early is only for a model that is convinced it has everything:
                 # one that knows something is missing goes back to search until the steps run out
                 content = NOT_YET.format(missing=missing) if missing and made else TOO_EARLY
+                step["refused"] = "missing" if missing and made else "too_early"
             elif _call_key(name, arguments) in made:
                 # an unsure model tends to repeat itself: make it vary instead of running the call again
                 content = REPEATED
+                step["refused"] = "repeated"
             else:
                 made.add(_call_key(name, arguments))
                 content, step["new_excerpts"] = await _run_tool(mcp, name, arguments, notes)
             messages.append({"role": "tool", "tool_name": name, "content": content})
+            yield {"type": "step", **step}
+
+    yield {"type": "sources", "sources": notes.sources}
 
     # The answer is written in a new conversation that holds only the excerpts and the question:
     # the back and forth of the research would distract a small model
     language = await _language(question)
     found = "\n\n".join(notes.excerpts) or "(nothing was found)"
-    answer = await chat(
+    answer = ""
+    async for piece in chat_stream(
         [
             {"role": "system", "content": ANSWER.format(language=language)},
             {"role": "user", "content": f"Excerpts:\n\n{found}\n\nQuestion: {question}"},
         ],
-        [],
         ANSWER_TOKENS,
-    )
+    ):
+        answer += piece
+        yield {"type": "answer", "text": piece}
 
-    return {
-        "answer": answer.get("content", ""),
+    yield {
+        "type": "done",
+        "answer": answer,
         "sources": notes.sources,
         "steps": steps,
         "finished_by": finished_by,
         "model": CHAT_MODEL,
         "seconds": round(time.perf_counter() - started, 2),
     }
+
+
+async def ask(question: str, mcp_server=MCP_URL) -> dict:
+    """Run the research to its end and return only the summary."""
+    summary = {}
+    async for event in research(question, mcp_server):
+        if event["type"] == "done":
+            summary = {key: value for key, value in event.items() if key != "type"}
+    return summary

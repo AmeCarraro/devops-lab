@@ -14,6 +14,7 @@ $node = 'devops-lab-k3s'
 $tag = Get-Date -Format 'yyyyMMdd-HHmmss'
 $agentImage = "devops-lab-agent:$tag"
 $mcpImage = "devops-lab-docs-mcp:$tag"
+$webImage = "devops-lab-web:$tag"
 
 function Stop-Deploy($message) { Write-Host "FAILED: $message" -ForegroundColor Red; exit 1 }
 function Assert-Ok($step) { if ($LASTEXITCODE -ne 0) { Stop-Deploy $step } }
@@ -42,11 +43,13 @@ docker build -q --build-arg APP_VERSION=$tag -t $agentImage $root
 Assert-Ok 'build agent'
 docker build -q -f (Join-Path $root 'mcp-server\Dockerfile') -t $mcpImage $root
 Assert-Ok 'build docs-mcp'
+docker build -q -f (Join-Path $root 'web\Dockerfile') -t $webImage $root
+Assert-Ok 'build web'
 
 # No registry locally: copy the images straight into the node's containerd
 Write-Host "== 4/5 load images into the node" -ForegroundColor Cyan
 $tar = Join-Path $env:TEMP 'devops-lab-images.tar'
-docker save -o $tar $agentImage $mcpImage
+docker save -o $tar $agentImage $mcpImage $webImage
 Assert-Ok 'docker save'
 docker cp $tar "${node}:/tmp/images.tar"
 docker exec $node ctr -n k8s.io images import /tmp/images.tar
@@ -74,12 +77,17 @@ Assert-Ok 'apply configmap'
 Assert-Ok 'apply agent'
 (Get-Content (Join-Path $root 'k8s\docs-mcp.yaml') -Raw).Replace('MCP_IMAGE_PLACEHOLDER', $mcpImage) | kubectl apply -f -
 Assert-Ok 'apply docs-mcp'
+(Get-Content (Join-Path $root 'k8s\web.yaml') -Raw).Replace('WEB_IMAGE_PLACEHOLDER', $webImage) | kubectl apply -f -
+Assert-Ok 'apply web'
 kubectl apply -f (Join-Path $root 'k8s\service.yaml') -f (Join-Path $root 'k8s\ingress.yaml')
 Assert-Ok 'apply service/ingress'
 kubectl -n demo rollout status deployment/docs-mcp --timeout=180s
 Assert-Ok 'rollout docs-mcp'
 kubectl -n demo rollout status deployment/demo-api --timeout=180s
 Assert-Ok 'rollout agent'
+kubectl -n demo rollout status deployment/web --timeout=180s
+Assert-Ok 'rollout web'
 
-Write-Host "`nAsk:  POST http://127.0.0.1:8080/ask   (try it at http://127.0.0.1:8080/docs)" -ForegroundColor Green
+Write-Host "`nPage: http://127.0.0.1:8080/" -ForegroundColor Green
+Write-Host "API:  http://127.0.0.1:8080/api/docs" -ForegroundColor Green
 Write-Host "MCP:  http://127.0.0.1:8080/mcp" -ForegroundColor Green

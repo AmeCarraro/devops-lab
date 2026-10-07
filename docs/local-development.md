@@ -21,7 +21,7 @@ ollama pull nomic-embed-text
 The script does by hand what the pipeline does in CI:
 
 1. starts the k3s container and waits for the node to be Ready;
-2. builds the two images (agent and docs-mcp) with a timestamp as tag;
+2. builds the three images (agent, docs-mcp and web) with a timestamp as tag;
 3. copies the images into the node, because there is no registry locally;
 4. writes the ConfigMap `llm-config` with the address of Ollama and the model names;
 5. applies the manifests in `k8s/` and waits for the rollout.
@@ -39,11 +39,27 @@ The script writes the name into the ConfigMap `llm-config` as `CHAT_MODEL` and t
 
 ## Ask a question
 
+Open the page at http://127.0.0.1:8080/ and type the question. The page shows the steps of the agent, the answer and the sections it read. The Stop button interrupts a run.
+
+The same from the command line, without the page:
+
 ```powershell
-Invoke-RestMethod http://127.0.0.1:8080/ask -Method Post -ContentType 'application/json' -Body '{"question": "How do I stop the cluster?"}'
+Invoke-RestMethod http://127.0.0.1:8080/api/ask -Method Post -ContentType 'application/json' -Body '{"question": "How do I stop the cluster?"}'
 ```
 
-The interactive API page is at http://127.0.0.1:8080/docs.
+The interactive API page is at http://127.0.0.1:8080/api/docs.
+
+## Work on the web page
+
+Node.js is not installed on the PC: `npm.ps1` runs npm in a container, inside `web/`.
+
+```powershell
+.\npm.ps1 install
+.\npm.ps1 test
+.\npm.ps1 run dev
+```
+
+`run dev` serves the page on http://127.0.0.1:5173 and reloads it when a file in `web/src` changes. The API still comes from the local cluster, so the cluster must be running.
 
 ## Use the MCP server from another client
 
@@ -85,7 +101,7 @@ pip install -r requirements-dev.txt
 pytest
 ```
 
-The tests do not need Ollama: the LLM is replaced by a scripted fake.
+The tests do not need Ollama: the LLM is replaced by a scripted fake. The tests of the web page run with `.\npm.ps1 test`.
 
 ## Change the documentation
 

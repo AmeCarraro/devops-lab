@@ -29,8 +29,26 @@ jobs:
       - run: pip install -r requirements-dev.txt
       - run: pytest
 
+  test-web:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      # the build type-checks first, so it fails on a type error
+      - run: npm run build
+      - run: npm test
+
   build:
-    needs: test
+    needs: [test, test-web]
     # pull requests are only tested: images are built from the main branch
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
@@ -49,8 +67,10 @@ jobs:
       - run: |
           docker build --build-arg APP_VERSION="${GITHUB_SHA::7}" -t "$IMAGES/agent:$GITHUB_SHA" .
           docker build -f mcp-server/Dockerfile -t "$IMAGES/docs-mcp:$GITHUB_SHA" .
+          docker build -f web/Dockerfile -t "$IMAGES/web:$GITHUB_SHA" .
           docker push "$IMAGES/agent:$GITHUB_SHA"
           docker push "$IMAGES/docs-mcp:$GITHUB_SHA"
+          docker push "$IMAGES/web:$GITHUB_SHA"
 
   # deploy runs on our own runner inside the k3s cluster ("k3s" is the name of the runner scale set).
   # kubectl authenticates with the service account of the runner pod, so no kubeconfig
@@ -98,6 +118,8 @@ jobs:
             --dry-run=client -o yaml | kubectl apply -f -
           sed "s|IMAGE_PLACEHOLDER|$IMAGES/agent:$GITHUB_SHA|" k8s/deployment.yaml | kubectl apply -f -
           sed "s|MCP_IMAGE_PLACEHOLDER|$IMAGES/docs-mcp:$GITHUB_SHA|" k8s/docs-mcp.yaml | kubectl apply -f -
+          sed "s|WEB_IMAGE_PLACEHOLDER|$IMAGES/web:$GITHUB_SHA|" k8s/web.yaml | kubectl apply -f -
           kubectl apply -f k8s/service.yaml -f k8s/ingress.yaml
           kubectl -n demo rollout status deployment/docs-mcp --timeout=180s
           kubectl -n demo rollout status deployment/demo-api --timeout=180s
+          kubectl -n demo rollout status deployment/web --timeout=180s

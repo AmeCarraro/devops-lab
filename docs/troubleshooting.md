@@ -1,8 +1,8 @@
 # Troubleshooting
 
-## /ask returns 502
+## /api/ask returns 502
 
-The agent could not reach the LLM or the MCP server. The `detail` field of the error says which call failed. Read the agent log first:
+The agent could not reach the LLM or the MCP server. The `detail` field of the error says which call failed. In the web page the same failure appears in red under the question. Read the agent log first:
 
 ```powershell
 kubectl -n demo logs deploy/demo-api

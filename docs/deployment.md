@@ -4,11 +4,12 @@ Status: the pipeline works end to end against the local cluster. A push to `main
 
 ## Pipeline
 
-The pipeline is a GitHub Actions workflow, `.github/workflows/ci.yml`, with three jobs.
+The pipeline is a GitHub Actions workflow, `.github/workflows/ci.yml`, with four jobs.
 
 1. **test**: installs `requirements-dev.txt` and runs `pytest` on a runner hosted by GitHub. It runs on every push to `main` and on every pull request.
-2. **build**: builds the two images, `agent` and `docs-mcp`, and pushes them to the GitHub Container Registry, `ghcr.io`. The tag is the commit SHA.
-3. **deploy**: runs on our own runner, inside the cluster, selected with `runs-on: k3s`. It writes the registry secret and the ConfigMap `llm-config`, applies the manifests in `k8s/` and waits for the rollout of both Deployments.
+2. **test-web**: in `web/`, runs the linter, the build, which checks the types first, and the tests of the page. It runs together with **test**.
+3. **build**: builds the three images, `agent`, `docs-mcp` and `web`, and pushes them to the GitHub Container Registry, `ghcr.io`. The tag is the commit SHA.
+4. **deploy**: runs on our own runner, inside the cluster, selected with `runs-on: k3s`. It writes the registry secret and the ConfigMap `llm-config`, applies the manifests in `k8s/` and waits for the rollout of the three Deployments.
 
 Build and deploy run only for a push to `main`. A pull request is only tested. The deploy job is skipped until the repository variable `OLLAMA_URL` is set, so the pipeline is green before a runner exists.
 

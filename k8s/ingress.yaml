@@ -9,7 +9,15 @@ spec:
   rules:
     - http:
         paths:
-          # the MCP server, for clients outside the cluster (e.g. Claude Code)
+          # the agent
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: demo-api
+                port:
+                  number: 80
+          # the MCP server, for clients outside the cluster
           - path: /mcp
             pathType: Prefix
             backend:
@@ -17,10 +25,11 @@ spec:
                 name: docs-mcp
                 port:
                   number: 8001
+          # everything else is the web page
           - path: /
             pathType: Prefix
             backend:
               service:
-                name: demo-api
+                name: web
                 port:
                   number: 80
