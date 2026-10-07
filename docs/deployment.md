@@ -34,11 +34,11 @@ The steps of a job run as the service account `deployer`. Its permissions are in
 
 ## Install the runner
 
-The scale set registers on GitHub with a personal access token (classic, scope `repo`). The token is stored by hand in a Kubernetes secret and is never committed.
+The scale set registers on GitHub with a personal access token (classic, scope `repo`). The token is stored in the Kubernetes secret `github-runner-token` and is never committed. `runner\set-token.ps1` opens a password box for the token and writes the secret; run it again to replace the token.
 
 ```powershell
 kubectl apply -f k8s\bootstrap\rbac.yaml
-kubectl -n arc-runners create secret generic github-runner-token --from-literal=github_token=<token>
+.\runner\set-token.ps1
 .\helm.ps1 install arc --namespace arc-systems --create-namespace oci://ghcr.io/actions/actions-runner-controller-charts/gha-runner-scale-set-controller --version 0.15.0
 .\helm.ps1 install k3s --namespace arc-runners -f runner/values.yaml --set githubConfigUrl=https://github.com/<user>/<repository> oci://ghcr.io/actions/actions-runner-controller-charts/gha-runner-scale-set --version 0.15.0
 ```
