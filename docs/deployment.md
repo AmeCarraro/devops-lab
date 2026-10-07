@@ -1,6 +1,6 @@
 # Pipeline and AWS
 
-Status: not run yet. The files described here are complete, the workflow passes `actionlint` and `terraform validate` passes, but no pipeline has run and nothing has been created on AWS. Everything runs locally for now.
+Status: the pipeline works end to end against the local cluster. A push to `main` is tested and built on GitHub, then deployed by the runner inside the cluster. Nothing has been created on AWS yet: `terraform validate` passes, but the AWS part has never been applied.
 
 ## Pipeline
 
