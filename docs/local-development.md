@@ -76,11 +76,7 @@ To run the app with live reload, `npm run tauri dev`, Rust and the Microsoft C++
 
 ## Use the MCP server from another client
 
-The MCP endpoint is http://127.0.0.1:8080/mcp. To add it to Claude Code:
-
-```powershell
-claude mcp add --transport http devops-lab-docs http://127.0.0.1:8080/mcp
-```
+The MCP endpoint is http://127.0.0.1:8080/mcp, with the Streamable HTTP transport. Any MCP client can connect to it: give the client this address and it discovers the two search tools by itself.
 
 ## Look inside the cluster
 

@@ -77,7 +77,7 @@ The desktop app does not contain the agent. It calls the same API as the page in
 
 ## Why MCP
 
-The agent does not import the search code. It discovers the tools at runtime from the MCP server, together with the instructions of the server on how to use them, so adding a capability means deploying a new tool on an MCP server, without touching the agent. The same server also works with other MCP clients, for example Claude Code.
+The agent does not import the search code. It discovers the tools at runtime from the MCP server, together with the instructions of the server on how to use them, so adding a capability means deploying a new tool on an MCP server, without touching the agent. The same server also works with any other MCP client.
 
 ## Configuration
 

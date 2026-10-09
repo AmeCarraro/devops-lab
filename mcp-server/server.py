@@ -1,6 +1,6 @@
 """MCP server "docs": exposes the documentation search as tools.
 
-Any MCP client can use it: our agent (app/agent.py), Claude Code, Claude Desktop...
+Any MCP client can use it; our agent (app/agent.py) is one of them.
 The transport is Streamable HTTP, so it runs as a normal web service in Kubernetes.
 """
 import os
