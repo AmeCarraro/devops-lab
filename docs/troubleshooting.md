@@ -40,9 +40,59 @@ The weak point is the decision to stop. The model can call `finish` with nothing
 
 When tool calling fails, the `steps` list in the reply is empty and the answer says that nothing was found. The model is not reliable enough at tool calling: `llama3.2:3b` behaves this way. Use a model that supports tools well, for example `granite4.1:3b`.
 
+## A run fails with out_of_memory
+
+This is a result, not a fault. The pipeline needed more memory than the device has, and Kubernetes stopped it. The page shows the attempt in red, and the model is told to try a smaller model or int8. The page on the model zoo lists how much memory each model needs.
+
+To see it from the side of Kubernetes, look at the pod of the run within five minutes: its status is `OOMKilled`.
+
+```powershell
+kubectl -n sandbox get pods
+```
+
+## A run stays in "Waiting for a pod"
+
+The Job exists and Kubernetes has not created its pod. The usual cause is the quota of the sandbox: at most 2 pods at a time, 4 CPU cores and 2 GB of memory in all. A third search started at the same moment waits for one of the others. The events of the namespace say what is refused:
+
+```powershell
+kubectl -n sandbox get events --sort-by=.lastTimestamp
+```
+
+## A run fails because the bench image is not on the node
+
+The run reports `The bench image is not on the node`. A run never downloads its image: the node must already have it. Locally, run `local\deploy.ps1` again, which loads the image named in `bench\VERSION`. After a deploy by the pipeline, check that the Deployment `sandbox-mcp` finished its rollout: its init container is what makes the node download the image.
+
+## A search ends with "Kubernetes refused the run"
+
+The sandbox server asked Kubernetes for a Job and was turned down. The message carries the reason given by Kubernetes. `forbidden` means that the namespace `sandbox` or the role of the service account `sandbox-mcp` is missing: apply `k8s\bootstrap\sandbox.yaml` as a cluster admin. `exceeded quota` means the device asked for is larger than the quota of the sandbox.
+
+## A search finds nothing that fits
+
+Read the attempts in the page. Three things can be happening.
+
+- The targets cannot be met on that device. The tables of the model zoo show what each configuration reaches on one core: no configuration is above 87.5% accuracy, and the accurate models are slow.
+- The model wastes runs. A small model sometimes changes the wrong setting or tries a configuration that the documentation warns against. Start the search again, or use a larger chat model.
+- A run was disturbed. Speed is measured on a PC that does other things too: a configuration close to the target can pass once and miss once.
+
+## The speeds change from one run to the next
+
+The device is simulated with CPU limits on the PC, and the PC is shared with everything else that runs on it: Ollama, the browser, a build. A heavy program that starts during a run makes that run slower. Compare configurations measured in the same conditions, and repeat a run that matters. Accuracy does not change: the same configuration always gives the same answers on the same pictures.
+
+How large the effect is was checked once, on 2026-10-10: the 40 configurations of the reference device were measured twice. The accuracy was identical in all 40. The speed differed by about 2% for a typical configuration. Four runs that overlapped with a program using many cores were between 30% and 50% slower.
+
 ## MCP client gets 421 Invalid Host header
 
-The MCP server rejects requests whose `Host` header is not in its allow list. This protects against DNS rebinding attacks. The default list accepts `docs-mcp:8001`, `127.0.0.1` and `localhost` on any port. To reach the server under another name, set the environment variable `ALLOWED_HOSTS` of docs-mcp to a comma-separated list of `host:port` values.
+The MCP server rejects requests whose `Host` header is not in its allow list. This protects against DNS rebinding attacks. The default list accepts `docs-mcp:8001`, `127.0.0.1` and `localhost` on any port. To reach the server under another name, set the environment variable `ALLOWED_HOSTS` of docs-mcp to a comma-separated list of `host:port` values. The sandbox server works the same way, with `sandbox-mcp:8002` in its default list.
+
+## Reach the sandbox server from the PC
+
+No ingress route leads to the sandbox server, on purpose: whoever reaches it can start runs. To call its tools from the PC while developing, open a tunnel through the Kubernetes API, which asks for the admin credentials of the cluster:
+
+```powershell
+kubectl -n demo port-forward svc/sandbox-mcp 8002:8002
+```
+
+The MCP endpoint is then http://127.0.0.1:8002/mcp until the command is stopped.
 
 ## Pod stuck in ImagePullBackOff on the local cluster
 

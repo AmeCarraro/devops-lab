@@ -8,10 +8,28 @@ The pipeline is a GitHub Actions workflow, `.github/workflows/ci.yml`, with four
 
 1. **test**: installs `requirements-dev.txt` and runs `pytest` on a runner hosted by GitHub. It runs on every push to `main` and on every pull request.
 2. **test-web**: in `web/`, runs the linter, the build, which checks the types first, and the tests of the page. It runs together with **test**.
-3. **build**: builds the three images, `agent`, `docs-mcp` and `web`, and pushes them to the GitHub Container Registry, `ghcr.io`. The tag is the commit SHA.
-4. **deploy**: runs on our own runner, inside the cluster, selected with `runs-on: k3s`. It writes the registry secret and the ConfigMap `llm-config`, applies the manifests in `k8s/` and waits for the rollout of the three Deployments.
+3. **build**: builds the images `agent`, `docs-mcp`, `sandbox-mcp` and `web`, and pushes them to the GitHub Container Registry, `ghcr.io`. The tag is the commit SHA. It also builds the `bench` image, but only when its version is new.
+4. **deploy**: runs on our own runner, inside the cluster, selected with `runs-on: k3s`. It writes the registry secret and the ConfigMap `llm-config`, applies the manifests in `k8s/` and waits for the rollout of the four Deployments.
 
 Build and deploy run only for a push to `main`. A pull request is only tested. The deploy job is skipped until the repository variable `OLLAMA_URL` is set, so the pipeline is green before a runner exists.
+
+## The bench image in the pipeline
+
+The bench image holds the models and the evaluation pictures. Building it downloads about 700 MB and takes several minutes, so it does not follow the commits. Its tag is the number in `bench/VERSION`. The build job asks the registry whether that tag exists and builds the image only when it does not. After a change to anything in `bench/`, raise the number in `bench/VERSION`: otherwise the old image stays in use.
+
+The web image is built from the bench image as well: it copies the sample pictures out of it, so the page shows exactly the pictures the models see.
+
+## How the cluster gets the bench image
+
+A run in the sandbox starts long after the deploy, when the registry token of the deploy no longer works. So the bench image must already be on the node. The Deployment `sandbox-mcp` has an init container that uses the bench image and does nothing: starting it makes the node download the image during the rollout, while the token is still valid. On a cluster with several nodes this is not enough, because a run can land on another node.
+
+## What must be applied by hand
+
+`k8s/bootstrap/rbac.yaml` and `k8s/bootstrap/sandbox.yaml` are applied once by a cluster admin, not by the pipeline. The second one creates the namespace `sandbox` with its network policy and quota, the service account `sandbox-mcp` and the role that lets it start runs. The pipeline can deploy the sandbox server but cannot change these: what a run is allowed to do is not something a push can loosen.
+
+```powershell
+kubectl apply -f k8s\bootstrap\rbac.yaml -f k8s\bootstrap\sandbox.yaml
+```
 
 ## Building the desktop app
 

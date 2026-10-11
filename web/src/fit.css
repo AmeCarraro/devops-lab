@@ -1,0 +1,692 @@
+/* The "Fit" view: the controls on the left, what happens on the right. */
+
+.fit {
+  display: grid;
+  grid-template-columns: 340px minmax(0, 1fr);
+  align-items: start;
+  gap: 16px;
+}
+
+.fit .card {
+  padding: 22px;
+}
+
+.fit header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.faint {
+  color: var(--faint);
+}
+
+/* ---- the controls ---- */
+
+.panel {
+  position: sticky;
+  top: 84px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.panel h1 {
+  margin-bottom: 6px;
+  font-family: var(--display);
+  font-size: 1.7rem;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  line-height: 1.08;
+}
+
+.panel fieldset {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  transition: opacity 0.3s;
+}
+
+.panel fieldset:disabled {
+  opacity: 0.55;
+}
+
+.panel legend {
+  margin-bottom: 12px;
+  padding: 0;
+}
+
+.devices {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.device {
+  display: grid;
+  grid-template-columns: 86px 1fr;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px 8px 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-small);
+  background: var(--raised);
+  cursor: pointer;
+  transition:
+    border-color 0.25s,
+    background 0.25s,
+    transform 0.2s;
+}
+
+.device:hover {
+  transform: translateX(3px);
+}
+
+.device input {
+  position: absolute;
+  opacity: 0;
+}
+
+.device:has(:focus-visible) {
+  outline: 2px solid var(--cyan);
+  outline-offset: 2px;
+}
+
+.device.chosen {
+  border-color: var(--violet);
+  background: linear-gradient(110deg, rgba(139, 108, 255, 0.2), rgba(56, 214, 245, 0.08));
+}
+
+.device span {
+  display: flex;
+  flex-direction: column;
+}
+
+.device small {
+  color: var(--muted);
+  font-size: 0.76rem;
+}
+
+.slider {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.slider span {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.slider span svg {
+  color: var(--cyan);
+}
+
+.slider b {
+  margin-left: auto;
+  color: var(--text);
+  font-size: 1.05rem;
+}
+
+.slider small {
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 400;
+}
+
+/* the part of the track to the left of the thumb is lit: --fill is how far the value is */
+.slider input {
+  appearance: none;
+  width: 100%;
+  height: 6px;
+  margin: 6px 0;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--violet), var(--cyan)) 0 / var(--fill) 100% no-repeat, var(--line-strong);
+  cursor: pointer;
+}
+
+.slider input::-webkit-slider-thumb {
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border: 3px solid var(--card-solid);
+  border-radius: 50%;
+  background: #fff;
+  box-shadow:
+    0 0 0 1px var(--cyan),
+    0 4px 14px rgba(56, 214, 245, 0.6);
+  transition: transform 0.15s;
+}
+
+.slider input::-webkit-slider-thumb:hover {
+  transform: scale(1.18);
+}
+
+.slider input::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border: 3px solid var(--card-solid);
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 0 1px var(--cyan);
+}
+
+/* ---- what happens ---- */
+
+.stage {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+.visuals {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.visuals .card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.legend {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 0.76rem;
+}
+
+.legend i {
+  width: 9px;
+  height: 9px;
+  margin-left: 8px;
+  border-radius: 50%;
+  background: var(--faint);
+}
+
+.legend i.fits {
+  background: var(--ok);
+}
+
+.chart {
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.chart .grid {
+  stroke: var(--line);
+}
+
+.chart .tick,
+.chart .axis {
+  fill: var(--faint);
+  font-family: var(--mono);
+  font-size: 10.5px;
+}
+
+.chart .zone {
+  transition:
+    x 0.3s,
+    width 0.3s,
+    height 0.3s;
+}
+
+.chart .limit {
+  stroke: var(--ok);
+  stroke-width: 1.4;
+  stroke-dasharray: 5 6;
+  opacity: 0.8;
+  transition:
+    x1 0.3s,
+    x2 0.3s,
+    y1 0.3s,
+    y2 0.3s;
+}
+
+.chart .zone-label {
+  fill: var(--ok);
+  font-family: var(--display);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.chart .trail {
+  fill: none;
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-dasharray: 2 7;
+  stroke-linecap: round;
+  opacity: 0.8;
+  animation: flow 1.6s linear infinite;
+}
+
+.chart .point {
+  cursor: pointer;
+  transition: transform 0.6s cubic-bezier(0.2, 0.9, 0.2, 1);
+}
+
+.chart .point .body {
+  fill: var(--card-solid);
+  stroke: var(--faint);
+  stroke-width: 2;
+  transition:
+    r 0.2s,
+    stroke 0.2s;
+}
+
+.chart .point text {
+  fill: var(--text);
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 700;
+  pointer-events: none;
+}
+
+.chart .point.fits .body {
+  fill: var(--ok);
+  stroke: var(--ok);
+}
+
+.chart .point.fits text {
+  fill: #032116;
+}
+
+.chart .point.selected .body {
+  stroke: var(--cyan);
+  stroke-width: 3;
+}
+
+.chart .point:hover .body {
+  r: 14;
+}
+
+.chart .halo {
+  fill: var(--ok);
+  opacity: 0.25;
+  animation: halo 1.8s ease-out infinite;
+}
+
+@keyframes halo {
+  from {
+    r: 12;
+    opacity: 0.45;
+  }
+
+  to {
+    r: 28;
+    opacity: 0;
+  }
+}
+
+/* ---- the result ---- */
+
+.verdict {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+  gap: 22px;
+  padding: 28px !important;
+}
+
+.verdict.ok {
+  background:
+    linear-gradient(120deg, rgba(61, 220, 151, 0.16), var(--card) 55%) padding-box,
+    linear-gradient(140deg, var(--ok), transparent 50%, var(--line)) border-box;
+}
+
+.verdict.bad {
+  grid-template-columns: 1fr;
+}
+
+.verdict-text {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.verdict h2 {
+  font-family: var(--display);
+  font-size: clamp(2rem, 4vw, 3.1rem);
+  font-weight: 600;
+  letter-spacing: -0.04em;
+  line-height: 1;
+}
+
+.note {
+  padding-left: 14px;
+  border-left: 2px solid var(--violet);
+  font-size: 0.95rem;
+}
+
+.verdict-config {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 14px 16px 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-small);
+  background: rgba(0, 0, 0, 0.26);
+}
+
+.verdict-config header {
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.verdict-config button {
+  padding: 3px 11px;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  background: none;
+  font-size: 0.74rem;
+  cursor: pointer;
+}
+
+/* in the narrow box of the result the three meters go one under the other */
+.verdict-config .meters {
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+
+.verdict-config pre {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: var(--cyan);
+}
+
+/* ---- the log ---- */
+
+.log {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.empty {
+  padding: 26px 0;
+  text-align: center;
+}
+
+.timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.lookup {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 2px 6px;
+  color: var(--muted);
+  font-size: 0.86rem;
+}
+
+.lookup svg {
+  flex: none;
+  color: var(--violet);
+  font-size: 1rem;
+}
+
+.lookup small {
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+.lookup span small {
+  margin-left: 0;
+  white-space: normal;
+}
+
+.lookup.refused svg {
+  color: var(--warn);
+}
+
+.attempt {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--faint);
+  border-radius: var(--radius-small);
+  background: var(--raised);
+  cursor: pointer;
+  transition:
+    border-color 0.25s,
+    background 0.25s,
+    transform 0.2s;
+}
+
+.attempt:hover {
+  transform: translateX(3px);
+}
+
+.attempt.ok {
+  border-left-color: var(--ok);
+}
+
+.attempt.warn {
+  border-left-color: var(--warn);
+}
+
+.attempt.bad {
+  border-left-color: var(--bad);
+}
+
+.attempt.busy {
+  border-left-color: var(--cyan);
+}
+
+.attempt.selected {
+  border-color: var(--line-strong);
+  background: rgba(139, 108, 255, 0.11);
+}
+
+.attempt header {
+  gap: 12px;
+}
+
+.number {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--card-solid);
+  border: 1px solid var(--line-strong);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.config {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-right: auto;
+}
+
+.config b {
+  margin-right: 4px;
+  font-size: 0.95rem;
+}
+
+.tag {
+  padding: 1px 9px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 0.74rem;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+  padding: 3px 11px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.badge.ok {
+  background: color-mix(in srgb, var(--ok) 20%, transparent);
+  color: var(--ok);
+}
+
+.badge.warn {
+  background: color-mix(in srgb, var(--warn) 18%, transparent);
+  color: var(--warn);
+}
+
+.badge.bad {
+  background: color-mix(in srgb, var(--bad) 18%, transparent);
+  color: var(--bad);
+}
+
+.badge.busy {
+  background: color-mix(in srgb, var(--cyan) 16%, transparent);
+  color: var(--cyan);
+}
+
+.badge.busy svg {
+  animation: pulse 1.2s ease-in-out infinite;
+}
+
+.reason {
+  color: var(--muted);
+  font-size: 0.88rem;
+  font-style: italic;
+}
+
+.failure {
+  color: var(--bad);
+  font-size: 0.86rem;
+}
+
+.meters {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.meter p {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+  color: var(--muted);
+  font-size: 0.76rem;
+}
+
+.meter b {
+  color: var(--warn);
+  font-size: 0.98rem;
+}
+
+.meter.good b {
+  color: var(--text);
+}
+
+.meter small {
+  color: var(--faint);
+  font-size: 0.68rem;
+  font-weight: 400;
+}
+
+.track {
+  position: relative;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--line);
+}
+
+.track i {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: 999px;
+  background: var(--warn);
+  transition: width 0.7s cubic-bezier(0.2, 0.9, 0.2, 1);
+}
+
+.meter.good .track i {
+  background: linear-gradient(90deg, var(--violet), var(--cyan));
+}
+
+/* the tick is the target: the bar must reach it */
+.track u {
+  position: absolute;
+  top: -4px;
+  bottom: -4px;
+  width: 2px;
+  border-radius: 2px;
+  background: var(--text);
+}
+
+.track.busy i {
+  background: linear-gradient(90deg, var(--violet), var(--cyan));
+  box-shadow: 0 0 12px rgba(56, 214, 245, 0.7);
+}
+
+@media (max-width: 1080px) {
+  .fit {
+    grid-template-columns: 1fr;
+  }
+
+  .panel {
+    position: static;
+  }
+
+  .devices {
+    flex-direction: row;
+  }
+
+  .device {
+    flex: 1;
+    grid-template-columns: 1fr;
+    justify-items: center;
+    text-align: center;
+  }
+}
+
+@media (max-width: 760px) {
+  .visuals,
+  .verdict,
+  .meters {
+    grid-template-columns: 1fr;
+  }
+
+  .devices {
+    flex-direction: column;
+  }
+
+  .device {
+    grid-template-columns: 86px 1fr;
+    justify-items: start;
+    text-align: left;
+  }
+}

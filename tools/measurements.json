@@ -1,0 +1,1309 @@
+{
+ "measured_on": "2026-10-10",
+ "runs": [
+  {
+   "device": {
+    "cpu": 1,
+    "memory_mb": 512
+   },
+   "pipeline": {
+    "model": "mobilenet_v3_small",
+    "precision": "fp32",
+    "input_size": 224,
+    "threads": 1
+   },
+   "failure": "",
+   "result": {
+    "fps": 263.5,
+    "accuracy": 82.5,
+    "latency_ms": 2.5,
+    "latency_p95_ms": 2.9,
+    "memory_mb": 47,
+    "model_mb": 10.2,
+    "images": 200
+   }
+  },
+  {
+   "device": {
+    "cpu": 1,
+    "memory_mb": 512
+   },
+   "pipeline": {
+    "model": "mobilenet_v3_small",
+    "precision": "fp32",
+    "input_size": 192,
+    "threads": 1
+   },
+   "failure": "",
+   "result": {
+    "fps": 272.2,
+    "accuracy": 80.5,
+    "latency_ms": 2.0,
+    "latency_p95_ms": 2.5,
+    "memory_mb": 46,
+    "model_mb": 10.2,
+    "images": 200
+   }
+  },
+  {
+   "device": {
+    "cpu": 1,
+    "memory_mb": 512
+   },
+   "pipeline": {
+    "model": "mobilenet_v3_small",
+    "precision": "fp32",
+    "input_size": 160,
+    "threads": 1
+   },
+   "failure": "",
+   "result": {
+    "fps": 336.5,
+    "accuracy": 68.5,
+    "latency_ms": 1.6,
+    "latency_p95_ms": 1.9,
+    "memory_mb": 45,
+    "model_mb": 10.2,
+    "images": 200
+   }
+  },
+  {
+   "device": {
+    "cpu": 1,
+    "memory_mb": 512
+   },
+   "pipeline": {
+    "model": "mobilenet_v3_small",
+    "precision": "fp32",
+    "input_size": 128,
+    "threads": 1
+   },
+   "failure": "",
+   "result": {
+    "fps": 427.6,
+    "accuracy": 52.5,
+    "latency_ms": 1.2,
+    "latency_p95_ms": 1.5,
+    "memory_mb": 46,
+    "model_mb": 10.2,
+    "images": 200
+   }
+  },
+  {
+   "device": {
+    "cpu": 1,
+    "memory_mb": 512
+   },
+   "pipeline": {
+    "model": "mobilenet_v3_small",
+    "precision": "int8",
+    "input_size": 224,
+    "threads": 1
+   },
+   "failure": "",
+   "result": {
+    "fps": 294.4,
+    "accuracy": 1.5,
+    "latency_ms": 2.2,
+    "latency_p95_ms": 2.5,
+    "memory_mb": 36,
+    "model_mb": 2.9,
+    "images": 200
+   }
+  },
+  {
+   "device": {
+    "cpu": 1,
+    "memory_mb": 512
+   },
+   "pipeline": {
+    "model": "mobilenet_v3_small",
+    "precision": "int8",
+    "input_size": 192,
+    "threads": 1
+   },
+   "failure": "",
+   "result": {
+    "fps": 281.6,
+    "accuracy": 1.5,
+    "latency_ms": 1.8,
+    "latency_p95_ms": 2.3,
+    "memory_mb": 35,
+    "model_mb": 2.9,
+    "images": 200
+   }
+  },
+  {
+   "device": {
+    "cpu": 1,
+    "memory_mb": 512
+   },
+   "pipeline": {
+    "model": "mobilenet_v3_small",
+    "precision": "int8",
+    "input_size": 160,
+    "threads": 1
+   },
+   "failure": "",
+   "result": {
+    "fps": 379.0,
+    "accuracy": 1.5,
+    "latency_ms": 1.3,
+    "latency_p95_ms": 1.6,
+    "memory_mb": 35,
+    "model_mb": 2.9,
+    "images": 200
+   }
+  },
+  {
+   "device": {
+    "cpu": 1,
+    "memory_mb": 512
+   },
+   "pipeline": {
+    "model": "mobilenet_v3_small",
+    "precision": "int8",
+    "input_size": 128,
+    "threads": 1
+   },
+   "failure": "",
+   "result": {
+    "fps": 515.2,
+    "accuracy": 1.5,
+    "latency_ms": 0.9,
+    "latency_p95_ms": 1.1,
+    "memory_mb": 35,
+    "model_mb": 2.9,
+    "images": 200
+   }
+  },
+  {
+   "device": {
+    "cpu": 1,
+    "memory_mb": 512
+   },
+   "pipeline": {
+    "model": "mobilenet_v2",
+    "precision": "fp32",
+    "input_size": 224,
+    "threads": 1
+   },
+   "failure": "",
+   "result": {
+    "fps": 114.0,
+    "accuracy": 75.5,
+    "latency_ms": 7.4,
+    "latency_p95_ms": 8.0,
+    "memory_mb": 57,
+    "model_mb": 14.0,
+    "images": 200
+   }
+  },
+  {
+   "device": {
+    "cpu": 1,
+    "memory_mb": 512
+   },
+   "pipeline": {
+    "model": "mobilenet_v2",
+    "precision": "fp32",
+    "input_size": 192,
+    "threads": 1
+   },
+   "failure": "",
+   "result": {
+    "fps": 136.3,
+    "accuracy": 74.5,
+    "latency_ms": 5.6,
+    "latency_p95_ms": 6.4,
+    "memory_mb": 55,
+    "model_mb": 14.0,
+    "images": 200
+   }
+  },
+  {
+   "device": {
+    "cpu": 1,
+    "memory_mb": 512
+   },
+   "pipeline": {
+    "model": "mobilenet_v2",
+    "precision": "fp32",
+    "input_size": 160,
+    "threads": 1
+   },
+   "failure": "",
+   "result": {
+    "fps": 179.4,
+    "accuracy": 71.5,
+    "latency_ms": 4.1,
+    "latency_p95_ms": 4.6,
+    "memory_mb": 57,
+    "model_mb": 14.0,
+    "images": 200
+   }
+  },
+  {
+   "device": {
+    "cpu": 1,
+    "memory_mb": 512
+   },
+   "pipeline": {
+    "model": "mobilenet_v2",
+    "precision": "fp32",
+    "input_size": 128,
+    "threads": 1
+   },
+   "failure": "",
+   "result": {
+    "fps": 246.3,
+    "accuracy": 70.5,
+    "latency_ms": 2.8,
+    "latency_p95_ms": 3.3,
+    "memory_mb": 55,
+    "model_mb": 14.0,
+    "images": 200
+   }
+  },
+  {
+   "device": {
+    "cpu": 1,
+    "memory_mb": 512
+   },
+   "pipeline": {
+    "model": "mobilenet_v2",
+    "precision": "int8",
+    "input_size": 224,
+    "threads": 1
+   },
+   "failure": "",
+   "result": {
+    "fps": 187.5,
+    "accuracy": 75.0,
+    "latency_ms": 4.0,
+    "latency_p95_ms": 4.4,
+    "memory_mb": 39,
+    "model_mb": 3.9,
+    "images": 200
+   }
+  },
+  {
+   "device": {
+    "cpu": 1,
+    "memory_mb": 512
+   },
+   "pipeline": {
+    "model": "mobilenet_v2",
+    "precision": "int8",
+    "input_size": 192,
+    "threads": 1
+   },
+   "failure": "",
+   "result": {
+    "fps": 218.2,
+    "accuracy": 74.5,
+    "latency_ms": 3.0,
+    "latency_p95_ms": 3.3,
+    "memory_mb": 36,
+    "model_mb": 3.9,
+    "images": 200
+   }
+  },
+  {
+   "device": {
+    "cpu": 1,
+    "memory_mb": 512
+   },
+   "pipeline": {
+    "model": "mobilenet_v2",
+    "precision": "int8",
+    "input_size": 160,
+    "threads": 1
+   },
+   "failure": "",
+   "result": {
+    "fps": 275.1,
+    "accuracy": 73.5,
+    "latency_ms": 2.2,
+    "latency_p95_ms": 2.6,
+    "memory_mb": 36,
+    "model_mb": 3.9,
+    "images": 200
+   }
+  },
+  {
+   "device": {
+    "cpu": 1,
+    "memory_mb": 512
+   },
+   "pipeline": {
+    "model": "mobilenet_v2",
+    "precision": "int8",
+    "input_size": 128,
+    "threads": 1
+   },
+   "failure": "",
+   "result": {
+    "fps": 381.8,
+    "accuracy": 46.5,
+    "latency_ms": 1.4,
+    "latency_p95_ms": 1.8,
+    "memory_mb": 35,
+    "model_mb": 3.9,
+    "images": 200
+   }
+  },
+  {
+   "device": {
+    "cpu": 1,
+    "memory_mb": 512
+   },
+   "pipeline": {
+    "model": "efficientnet_b0",
+    "precision": "fp32",
+    "input_size": 224,
+    "threads": 1
+   },
+   "failure": "",
+   "result": {
+    "fps": 58.0,
+    "accuracy": 87.5,
+    "latency_ms": 15.7,
+    "latency_p95_ms": 16.9,
+    "memory_mb": 91,
+    "model_mb": 21.1,
+    "images": 200
+   }
+  },
+  {
+   "device": {
+    "cpu": 1,
+    "memory_mb": 512
+   },
+   "pipeline": {
+    "model": "efficientnet_b0",
+    "precision": "fp32",
+    "input_size": 192,
+    "threads": 1
+   },
+   "failure": "",
+   "result": {
+    "fps": 74.6,
+    "accuracy": 85.0,
+    "latency_ms": 11.6,
+    "latency_p95_ms": 12.3,
+    "memory_mb": 78,
+    "model_mb": 21.1,
+    "images": 200
+   }
+  },
+  {
+   "device": {
+    "cpu": 1,
+    "memory_mb": 512
+   },
+   "pipeline": {
+    "model": "efficientnet_b0",
+    "precision": "fp32",
+    "input_size": 160,
+    "threads": 1
+   },
+   "failure": "",
+   "result": {
+    "fps": 98.3,
+    "accuracy": 82.5,
+    "latency_ms": 8.7,
+    "latency_p95_ms": 9.3,
+    "memory_mb": 80,
+    "model_mb": 21.1,
+    "images": 200
+   }
+  },
+  {
+   "device": {
+    "cpu": 1,
+    "memory_mb": 512
+   },
+   "pipeline": {
+    "model": "efficientnet_b0",
+    "precision": "fp32",
+    "input_size": 128,
+    "threads": 1
+   },
+   "failure": "",
+   "result": {
+    "fps": 140.0,
+    "accuracy": 77.5,
+    "latency_ms": 5.8,
+    "latency_p95_ms": 6.4,
+    "memory_mb": 75,
+    "model_mb": 21.1,
+    "images": 200
+   }
+  },
+  {
+   "device": {
+    "cpu": 1,
+    "memory_mb": 512
+   },
+   "pipeline": {
+    "model": "efficientnet_b0",
+    "precision": "int8",
+    "input_size": 224,
+    "threads": 1
+   },
+   "failure": "",
+   "result": {
+    "fps": 97.9,
+    "accuracy": 34.0,
+    "latency_ms": 8.8,
+    "latency_p95_ms": 9.5,
+    "memory_mb": 48,
+    "model_mb": 6.2,
+    "images": 200
+   }
+  },
+  {
+   "device": {
+    "cpu": 1,
+    "memory_mb": 512
+   },
+   "pipeline": {
+    "model": "efficientnet_b0",
+    "precision": "int8",
+    "input_size": 192,
+    "threads": 1
+   },
+   "failure": "",
+   "result": {
+    "fps": 119.5,
+    "accuracy": 31.5,
+    "latency_ms": 6.6,
+    "latency_p95_ms": 7.1,
+    "memory_mb": 45,
+    "model_mb": 6.2,
+    "images": 200
+   }
+  },
+  {
+   "device": {
+    "cpu": 1,
+    "memory_mb": 512
+   },
+   "pipeline": {
+    "model": "efficientnet_b0",
+    "precision": "int8",
+    "input_size": 160,
+    "threads": 1
+   },
+   "failure": "",
+   "result": {
+    "fps": 155.2,
+    "accuracy": 25.5,
+    "latency_ms": 4.9,
+    "latency_p95_ms": 5.6,
+    "memory_mb": 44,
+    "model_mb": 6.2,
+    "images": 200
+   }
+  },
+  {
+   "device": {
+    "cpu": 1,
+    "memory_mb": 512
+   },
+   "pipeline": {
+    "model": "efficientnet_b0",
+    "precision": "int8",
+    "input_size": 128,
+    "threads": 1
+   },
+   "failure": "",
+   "result": {
+    "fps": 216.3,
+    "accuracy": 18.5,
+    "latency_ms": 3.3,
+    "latency_p95_ms": 3.8,
+    "memory_mb": 42,
+    "model_mb": 6.2,
+    "images": 200
+   }
+  },
+  {
+   "device": {
+    "cpu": 1,
+    "memory_mb": 512
+   },
+   "pipeline": {
+    "model": "resnet18",
+    "precision": "fp32",
+    "input_size": 224,
+    "threads": 1
+   },
+   "failure": "",
+   "result": {
+    "fps": 30.2,
+    "accuracy": 81.0,
+    "latency_ms": 31.5,
+    "latency_p95_ms": 33.0,
+    "memory_mb": 121,
+    "model_mb": 46.7,
+    "images": 200
+   }
+  },
+  {
+   "device": {
+    "cpu": 1,
+    "memory_mb": 512
+   },
+   "pipeline": {
+    "model": "resnet18",
+    "precision": "fp32",
+    "input_size": 192,
+    "threads": 1
+   },
+   "failure": "",
+   "result": {
+    "fps": 38.5,
+    "accuracy": 78.5,
+    "latency_ms": 24.2,
+    "latency_p95_ms": 25.3,
+    "memory_mb": 119,
+    "model_mb": 46.7,
+    "images": 200
+   }
+  },
+  {
+   "device": {
+    "cpu": 1,
+    "memory_mb": 512
+   },
+   "pipeline": {
+    "model": "resnet18",
+    "precision": "fp32",
+    "input_size": 160,
+    "threads": 1
+   },
+   "failure": "",
+   "result": {
+    "fps": 54.1,
+    "accuracy": 73.0,
+    "latency_ms": 16.8,
+    "latency_p95_ms": 18.0,
+    "memory_mb": 117,
+    "model_mb": 46.7,
+    "images": 200
+   }
+  },
+  {
+   "device": {
+    "cpu": 1,
+    "memory_mb": 512
+   },
+   "pipeline": {
+    "model": "resnet18",
+    "precision": "fp32",
+    "input_size": 128,
+    "threads": 1
+   },
+   "failure": "",
+   "result": {
+    "fps": 78.2,
+    "accuracy": 65.5,
+    "latency_ms": 11.4,
+    "latency_p95_ms": 12.2,
+    "memory_mb": 108,
+    "model_mb": 46.7,
+    "images": 200
+   }
+  },
+  {
+   "device": {
+    "cpu": 1,
+    "memory_mb": 512
+   },
+   "pipeline": {
+    "model": "resnet18",
+    "precision": "int8",
+    "input_size": 224,
+    "threads": 1
+   },
+   "failure": "",
+   "result": {
+    "fps": 84.6,
+    "accuracy": 82.5,
+    "latency_ms": 10.2,
+    "latency_p95_ms": 11.7,
+    "memory_mb": 48,
+    "model_mb": 11.8,
+    "images": 200
+   }
+  },
+  {
+   "device": {
+    "cpu": 1,
+    "memory_mb": 512
+   },
+   "pipeline": {
+    "model": "resnet18",
+    "precision": "int8",
+    "input_size": 192,
+    "threads": 1
+   },
+   "failure": "",
+   "result": {
+    "fps": 105.8,
+    "accuracy": 80.0,
+    "latency_ms": 7.7,
+    "latency_p95_ms": 8.5,
+    "memory_mb": 46,
+    "model_mb": 11.8,
+    "images": 200
+   }
+  },
+  {
+   "device": {
+    "cpu": 1,
+    "memory_mb": 512
+   },
+   "pipeline": {
+    "model": "resnet18",
+    "precision": "int8",
+    "input_size": 160,
+    "threads": 1
+   },
+   "failure": "",
+   "result": {
+    "fps": 137.5,
+    "accuracy": 71.5,
+    "latency_ms": 5.7,
+    "latency_p95_ms": 6.4,
+    "memory_mb": 45,
+    "model_mb": 11.8,
+    "images": 200
+   }
+  },
+  {
+   "device": {
+    "cpu": 1,
+    "memory_mb": 512
+   },
+   "pipeline": {
+    "model": "resnet18",
+    "precision": "int8",
+    "input_size": 128,
+    "threads": 1
+   },
+   "failure": "",
+   "result": {
+    "fps": 190.7,
+    "accuracy": 62.5,
+    "latency_ms": 3.9,
+    "latency_p95_ms": 4.6,
+    "memory_mb": 44,
+    "model_mb": 11.8,
+    "images": 200
+   }
+  },
+  {
+   "device": {
+    "cpu": 1,
+    "memory_mb": 512
+   },
+   "pipeline": {
+    "model": "resnet50",
+    "precision": "fp32",
+    "input_size": 224,
+    "threads": 1
+   },
+   "failure": "",
+   "result": {
+    "fps": 13.5,
+    "accuracy": 86.0,
+    "latency_ms": 72.8,
+    "latency_p95_ms": 74.8,
+    "memory_mb": 243,
+    "model_mb": 102.1,
+    "images": 200
+   }
+  },
+  {
+   "device": {
+    "cpu": 1,
+    "memory_mb": 512
+   },
+   "pipeline": {
+    "model": "resnet50",
+    "precision": "fp32",
+    "input_size": 192,
+    "threads": 1
+   },
+   "failure": "",
+   "result": {
+    "fps": 17.8,
+    "accuracy": 84.5,
+    "latency_ms": 54.4,
+    "latency_p95_ms": 56.3,
+    "memory_mb": 226,
+    "model_mb": 102.1,
+    "images": 200
+   }
+  },
+  {
+   "device": {
+    "cpu": 1,
+    "memory_mb": 512
+   },
+   "pipeline": {
+    "model": "resnet50",
+    "precision": "fp32",
+    "input_size": 160,
+    "threads": 1
+   },
+   "failure": "",
+   "result": {
+    "fps": 24.9,
+    "accuracy": 84.5,
+    "latency_ms": 38.5,
+    "latency_p95_ms": 40.8,
+    "memory_mb": 242,
+    "model_mb": 102.1,
+    "images": 200
+   }
+  },
+  {
+   "device": {
+    "cpu": 1,
+    "memory_mb": 512
+   },
+   "pipeline": {
+    "model": "resnet50",
+    "precision": "fp32",
+    "input_size": 128,
+    "threads": 1
+   },
+   "failure": "",
+   "result": {
+    "fps": 35.5,
+    "accuracy": 84.5,
+    "latency_ms": 26.9,
+    "latency_p95_ms": 27.9,
+    "memory_mb": 213,
+    "model_mb": 102.1,
+    "images": 200
+   }
+  },
+  {
+   "device": {
+    "cpu": 1,
+    "memory_mb": 512
+   },
+   "pipeline": {
+    "model": "resnet50",
+    "precision": "int8",
+    "input_size": 224,
+    "threads": 1
+   },
+   "failure": "",
+   "result": {
+    "fps": 41.3,
+    "accuracy": 87.0,
+    "latency_ms": 22.6,
+    "latency_p95_ms": 24.0,
+    "memory_mb": 68,
+    "model_mb": 26.1,
+    "images": 200
+   }
+  },
+  {
+   "device": {
+    "cpu": 1,
+    "memory_mb": 512
+   },
+   "pipeline": {
+    "model": "resnet50",
+    "precision": "int8",
+    "input_size": 192,
+    "threads": 1
+   },
+   "failure": "",
+   "result": {
+    "fps": 53.3,
+    "accuracy": 84.5,
+    "latency_ms": 16.8,
+    "latency_p95_ms": 18.4,
+    "memory_mb": 65,
+    "model_mb": 26.1,
+    "images": 200
+   }
+  },
+  {
+   "device": {
+    "cpu": 1,
+    "memory_mb": 512
+   },
+   "pipeline": {
+    "model": "resnet50",
+    "precision": "int8",
+    "input_size": 160,
+    "threads": 1
+   },
+   "failure": "",
+   "result": {
+    "fps": 69.9,
+    "accuracy": 84.5,
+    "latency_ms": 12.5,
+    "latency_p95_ms": 13.9,
+    "memory_mb": 61,
+    "model_mb": 26.1,
+    "images": 200
+   }
+  },
+  {
+   "device": {
+    "cpu": 1,
+    "memory_mb": 512
+   },
+   "pipeline": {
+    "model": "resnet50",
+    "precision": "int8",
+    "input_size": 128,
+    "threads": 1
+   },
+   "failure": "",
+   "result": {
+    "fps": 98.8,
+    "accuracy": 82.0,
+    "latency_ms": 8.7,
+    "latency_p95_ms": 9.5,
+    "memory_mb": 62,
+    "model_mb": 26.1,
+    "images": 200
+   }
+  },
+  {
+   "device": {
+    "cpu": 0.5,
+    "memory_mb": 128
+   },
+   "pipeline": {
+    "model": "mobilenet_v3_small",
+    "precision": "fp32",
+    "input_size": 224,
+    "threads": 1
+   },
+   "failure": "",
+   "result": {
+    "fps": 125.2,
+    "accuracy": 82.5,
+    "latency_ms": 2.7,
+    "latency_p95_ms": 49.7,
+    "memory_mb": 46,
+    "model_mb": 10.2,
+    "images": 200
+   }
+  },
+  {
+   "device": {
+    "cpu": 0.5,
+    "memory_mb": 128
+   },
+   "pipeline": {
+    "model": "mobilenet_v3_small",
+    "precision": "int8",
+    "input_size": 224,
+    "threads": 1
+   },
+   "failure": "",
+   "result": {
+    "fps": 143.2,
+    "accuracy": 1.5,
+    "latency_ms": 2.2,
+    "latency_p95_ms": 3.3,
+    "memory_mb": 37,
+    "model_mb": 2.9,
+    "images": 200
+   }
+  },
+  {
+   "device": {
+    "cpu": 0.5,
+    "memory_mb": 128
+   },
+   "pipeline": {
+    "model": "mobilenet_v2",
+    "precision": "fp32",
+    "input_size": 224,
+    "threads": 1
+   },
+   "failure": "",
+   "result": {
+    "fps": 55.8,
+    "accuracy": 75.5,
+    "latency_ms": 7.6,
+    "latency_p95_ms": 36.2,
+    "memory_mb": 56,
+    "model_mb": 14.0,
+    "images": 200
+   }
+  },
+  {
+   "device": {
+    "cpu": 0.5,
+    "memory_mb": 128
+   },
+   "pipeline": {
+    "model": "mobilenet_v2",
+    "precision": "int8",
+    "input_size": 224,
+    "threads": 1
+   },
+   "failure": "",
+   "result": {
+    "fps": 93.3,
+    "accuracy": 75.0,
+    "latency_ms": 4.0,
+    "latency_p95_ms": 33.2,
+    "memory_mb": 38,
+    "model_mb": 3.9,
+    "images": 200
+   }
+  },
+  {
+   "device": {
+    "cpu": 0.5,
+    "memory_mb": 128
+   },
+   "pipeline": {
+    "model": "efficientnet_b0",
+    "precision": "fp32",
+    "input_size": 224,
+    "threads": 1
+   },
+   "failure": "",
+   "result": {
+    "fps": 28.6,
+    "accuracy": 87.5,
+    "latency_ms": 16.8,
+    "latency_p95_ms": 67.0,
+    "memory_mb": 96,
+    "model_mb": 21.1,
+    "images": 200
+   }
+  },
+  {
+   "device": {
+    "cpu": 0.5,
+    "memory_mb": 128
+   },
+   "pipeline": {
+    "model": "efficientnet_b0",
+    "precision": "int8",
+    "input_size": 224,
+    "threads": 1
+   },
+   "failure": "",
+   "result": {
+    "fps": 48.0,
+    "accuracy": 34.0,
+    "latency_ms": 9.1,
+    "latency_p95_ms": 58.0,
+    "memory_mb": 48,
+    "model_mb": 6.2,
+    "images": 200
+   }
+  },
+  {
+   "device": {
+    "cpu": 0.5,
+    "memory_mb": 128
+   },
+   "pipeline": {
+    "model": "resnet18",
+    "precision": "fp32",
+    "input_size": 224,
+    "threads": 1
+   },
+   "failure": "out_of_memory",
+   "result": {}
+  },
+  {
+   "device": {
+    "cpu": 0.5,
+    "memory_mb": 128
+   },
+   "pipeline": {
+    "model": "resnet18",
+    "precision": "int8",
+    "input_size": 224,
+    "threads": 1
+   },
+   "failure": "",
+   "result": {
+    "fps": 42.4,
+    "accuracy": 82.5,
+    "latency_ms": 10.8,
+    "latency_p95_ms": 53.4,
+    "memory_mb": 48,
+    "model_mb": 11.8,
+    "images": 200
+   }
+  },
+  {
+   "device": {
+    "cpu": 0.5,
+    "memory_mb": 128
+   },
+   "pipeline": {
+    "model": "resnet50",
+    "precision": "fp32",
+    "input_size": 224,
+    "threads": 1
+   },
+   "failure": "out_of_memory",
+   "result": {}
+  },
+  {
+   "device": {
+    "cpu": 0.5,
+    "memory_mb": 128
+   },
+   "pipeline": {
+    "model": "resnet50",
+    "precision": "int8",
+    "input_size": 224,
+    "threads": 1
+   },
+   "failure": "",
+   "result": {
+    "fps": 20.1,
+    "accuracy": 87.0,
+    "latency_ms": 36.1,
+    "latency_p95_ms": 74.4,
+    "memory_mb": 68,
+    "model_mb": 26.1,
+    "images": 200
+   }
+  },
+  {
+   "device": {
+    "cpu": 2,
+    "memory_mb": 1024
+   },
+   "pipeline": {
+    "model": "resnet50",
+    "precision": "fp32",
+    "input_size": 224,
+    "threads": 1
+   },
+   "failure": "",
+   "result": {
+    "fps": 13.2,
+    "accuracy": 86.0,
+    "latency_ms": 73.9,
+    "latency_p95_ms": 77.1,
+    "memory_mb": 234,
+    "model_mb": 102.1,
+    "images": 200
+   }
+  },
+  {
+   "device": {
+    "cpu": 2,
+    "memory_mb": 1024
+   },
+   "pipeline": {
+    "model": "efficientnet_b0",
+    "precision": "fp32",
+    "input_size": 224,
+    "threads": 1
+   },
+   "failure": "",
+   "result": {
+    "fps": 58.3,
+    "accuracy": 87.5,
+    "latency_ms": 15.7,
+    "latency_p95_ms": 17.4,
+    "memory_mb": 92,
+    "model_mb": 21.1,
+    "images": 200
+   }
+  },
+  {
+   "device": {
+    "cpu": 2,
+    "memory_mb": 1024
+   },
+   "pipeline": {
+    "model": "resnet50",
+    "precision": "fp32",
+    "input_size": 224,
+    "threads": 2
+   },
+   "failure": "",
+   "result": {
+    "fps": 24.7,
+    "accuracy": 86.0,
+    "latency_ms": 38.7,
+    "latency_p95_ms": 41.8,
+    "memory_mb": 233,
+    "model_mb": 102.1,
+    "images": 200
+   }
+  },
+  {
+   "device": {
+    "cpu": 2,
+    "memory_mb": 1024
+   },
+   "pipeline": {
+    "model": "efficientnet_b0",
+    "precision": "fp32",
+    "input_size": 224,
+    "threads": 2
+   },
+   "failure": "",
+   "result": {
+    "fps": 92.3,
+    "accuracy": 87.5,
+    "latency_ms": 9.1,
+    "latency_p95_ms": 11.4,
+    "memory_mb": 86,
+    "model_mb": 21.1,
+    "images": 200
+   }
+  },
+  {
+   "device": {
+    "cpu": 2,
+    "memory_mb": 1024
+   },
+   "pipeline": {
+    "model": "resnet50",
+    "precision": "fp32",
+    "input_size": 224,
+    "threads": 4
+   },
+   "failure": "",
+   "result": {
+    "fps": 18.5,
+    "accuracy": 86.0,
+    "latency_ms": 40.5,
+    "latency_p95_ms": 80.5,
+    "memory_mb": 234,
+    "model_mb": 102.1,
+    "images": 200
+   }
+  },
+  {
+   "device": {
+    "cpu": 2,
+    "memory_mb": 1024
+   },
+   "pipeline": {
+    "model": "efficientnet_b0",
+    "precision": "fp32",
+    "input_size": 224,
+    "threads": 4
+   },
+   "failure": "",
+   "result": {
+    "fps": 59.8,
+    "accuracy": 87.5,
+    "latency_ms": 6.0,
+    "latency_p95_ms": 62.3,
+    "memory_mb": 96,
+    "model_mb": 21.1,
+    "images": 200
+   }
+  },
+  {
+   "device": {
+    "cpu": 1,
+    "memory_mb": 512
+   },
+   "pipeline": {
+    "model": "mobilenet_v2",
+    "precision": "fp32",
+    "input_size": 224,
+    "threads": 2
+   },
+   "failure": "",
+   "result": {
+    "fps": 84.3,
+    "accuracy": 75.5,
+    "latency_ms": 4.2,
+    "latency_p95_ms": 35.5,
+    "memory_mb": 56,
+    "model_mb": 14.0,
+    "images": 200
+   }
+  },
+  {
+   "device": {
+    "cpu": 1,
+    "memory_mb": 512
+   },
+   "pipeline": {
+    "model": "resnet50",
+    "precision": "int8",
+    "input_size": 224,
+    "threads": 2
+   },
+   "failure": "",
+   "result": {
+    "fps": 33.5,
+    "accuracy": 87.0,
+    "latency_ms": 13.1,
+    "latency_p95_ms": 65.4,
+    "memory_mb": 68,
+    "model_mb": 26.1,
+    "images": 200
+   }
+  },
+  {
+   "device": {
+    "cpu": 1,
+    "memory_mb": 512
+   },
+   "pipeline": {
+    "model": "mobilenet_v2",
+    "precision": "fp32",
+    "input_size": 224,
+    "threads": 4
+   },
+   "failure": "",
+   "result": {
+    "fps": 55.5,
+    "accuracy": 75.5,
+    "latency_ms": 2.6,
+    "latency_p95_ms": 80.7,
+    "memory_mb": 56,
+    "model_mb": 14.0,
+    "images": 200
+   }
+  },
+  {
+   "device": {
+    "cpu": 1,
+    "memory_mb": 512
+   },
+   "pipeline": {
+    "model": "resnet50",
+    "precision": "int8",
+    "input_size": 224,
+    "threads": 4
+   },
+   "failure": "",
+   "result": {
+    "fps": 21.0,
+    "accuracy": 87.0,
+    "latency_ms": 48.3,
+    "latency_p95_ms": 49.6,
+    "memory_mb": 69,
+    "model_mb": 26.1,
+    "images": 200
+   }
+  }
+ ]
+}

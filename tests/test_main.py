@@ -95,3 +95,48 @@ def test_stream_ends_with_an_error_event_when_a_dependency_fails(monkeypatch):
     events = stream(monkeypatch, research)
 
     assert events[-1] == {"type": "error", "message": "ConnectionError: ollama is down"}
+
+
+TASK = {"device": {"cpu": 1, "memory_mb": 512}, "targets": {"min_fps": 30, "min_accuracy": 85}}
+
+
+def test_fit_streams_the_events_of_the_search(monkeypatch):
+    async def fake_fit(device, targets):
+        yield {"type": "attempt", "n": 1, "device": device}
+        yield {"type": "done", "outcome": "fits", "targets": targets}
+
+    monkeypatch.setattr(main, "fit", fake_fit)
+
+    response = client.post("/api/fit/stream", json=TASK)
+
+    events = [json.loads(line) for line in response.text.splitlines()]
+    assert response.headers["content-type"] == "application/x-ndjson"
+    assert events[0] == {"type": "attempt", "n": 1, "device": {"cpu": 1.0, "memory_mb": 512}}
+    assert events[1]["targets"] == {"min_fps": 30.0, "min_accuracy": 85.0}
+
+
+def test_fit_refuses_a_device_bigger_than_the_sandbox_allows():
+    task = {**TASK, "device": {"cpu": 64, "memory_mb": 512}}
+
+    assert client.post("/api/fit/stream", json=task).status_code == 422
+
+
+def test_fit_reports_a_failure_as_the_last_event(monkeypatch):
+    async def broken_fit(device, targets):
+        yield {"type": "attempt", "n": 1}
+        raise ConnectionError("sandbox down")
+
+    monkeypatch.setattr(main, "fit", broken_fit)
+
+    events = [json.loads(line) for line in client.post("/api/fit/stream", json=TASK).text.splitlines()]
+
+    assert events[-1] == {"type": "error", "message": "ConnectionError: sandbox down"}
+
+
+def test_zoo_answers_502_when_the_sandbox_is_unreachable(monkeypatch):
+    async def broken_zoo():
+        raise ConnectionError("sandbox down")
+
+    monkeypatch.setattr(main, "zoo", broken_zoo)
+
+    assert client.get("/api/zoo").status_code == 502

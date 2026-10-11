@@ -1,0 +1,12 @@
+{
+  "models": {
+    "mobilenet_v3_small": "IMAGENET1K_V1",
+    "mobilenet_v2": "IMAGENET1K_V2",
+    "efficientnet_b0": "IMAGENET1K_V1",
+    "resnet18": "IMAGENET1K_V1",
+    "resnet50": "IMAGENET1K_V2"
+  },
+  "precisions": ["fp32", "int8"],
+  "input_sizes": [128, 160, 192, 224],
+  "max_threads": 4
+}

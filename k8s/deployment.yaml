@@ -28,6 +28,8 @@ spec:
           env:
             - name: MCP_URL
               value: http://docs-mcp:8001/mcp
+            - name: SANDBOX_URL
+              value: http://sandbox-mcp:8002/mcp
           lifecycle:
             preStop:
               # keep serving for a moment while Kubernetes and the ingress stop sending

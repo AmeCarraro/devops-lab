@@ -1,3 +1,4 @@
 -r app/requirements.txt
 -r mcp-server/requirements.txt
+-r sandbox/requirements.txt
 pytest>=8,<9

@@ -6,9 +6,10 @@ import socket
 from fastapi import APIRouter, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from agent import CHAT_MODEL, ask, research
+from fit import fit, zoo
 
 logger = logging.getLogger("uvicorn.error")
 
@@ -31,6 +32,35 @@ app.add_middleware(
 
 class Question(BaseModel):
     question: str
+
+
+class Device(BaseModel):
+    cpu: float = Field(gt=0, le=4)
+    memory_mb: int = Field(ge=64, le=2048)
+
+
+class Targets(BaseModel):
+    min_fps: float = Field(gt=0, le=10000)
+    min_accuracy: float = Field(ge=0, le=100)
+
+
+class FitTask(BaseModel):
+    device: Device
+    targets: Targets
+
+
+def stream(events, what: str) -> StreamingResponse:
+    """A run as a stream of JSON lines, one per event. Closing the connection stops the run."""
+    async def lines():
+        try:
+            async for event in events:
+                yield json.dumps(event) + "\n"
+        except Exception as exc:
+            # the status code is already sent: the failure travels as the last event
+            logger.exception("%s failed", what)
+            yield json.dumps({"type": "error", "message": f"{type(exc).__name__}: {exc}"}) + "\n"
+
+    return StreamingResponse(lines(), media_type="application/x-ndjson", headers={"Cache-Control": "no-cache"})
 
 
 @app.get("/healthz", include_in_schema=False)
@@ -61,16 +91,27 @@ async def ask_docs_stream(body: Question):
 
     Closing the connection stops the run.
     """
-    async def lines():
-        try:
-            async for event in research(body.question):
-                yield json.dumps(event) + "\n"
-        except Exception as exc:
-            # the status code is already sent: the failure travels as the last event
-            logger.exception("ask failed")
-            yield json.dumps({"type": "error", "message": f"{type(exc).__name__}: {exc}"}) + "\n"
+    return stream(research(body.question), "ask")
 
-    return StreamingResponse(lines(), media_type="application/x-ndjson", headers={"Cache-Control": "no-cache"})
+
+@api.get("/zoo")
+async def pipeline_zoo():
+    """What a pipeline can be made of: models, precisions, input sizes, threads."""
+    try:
+        return await zoo()
+    except Exception as exc:
+        logger.exception("zoo failed")
+        raise HTTPException(status_code=502, detail=f"{type(exc).__name__}: {exc}")
+
+
+@api.post("/fit/stream")
+async def fit_stream(body: FitTask):
+    """Search for a pipeline configuration that meets the targets on a device, as a stream of JSON lines.
+
+    Every run in the sandbox is reported while it happens. Closing the connection stops
+    the search and cancels the run in progress.
+    """
+    return stream(fit(body.device.model_dump(), body.targets.model_dump()), "fit")
 
 
 app.include_router(api)

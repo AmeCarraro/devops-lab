@@ -64,12 +64,26 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+      # The bench image holds the models and the pictures: it is large and changes rarely.
+      # Its tag is the number in bench/VERSION, and it is built only when the registry
+      # does not have that number yet. Raise the number when something in bench/ changes.
+      - name: Bench image
+        run: |
+          BENCH="$IMAGES/bench:$(cat bench/VERSION)"
+          echo "BENCH=$BENCH" >> "$GITHUB_ENV"
+          if ! docker manifest inspect "$BENCH" > /dev/null 2>&1; then
+            docker build -f bench/Dockerfile -t "$BENCH" .
+            docker push "$BENCH"
+          fi
       - run: |
           docker build --build-arg APP_VERSION="${GITHUB_SHA::7}" -t "$IMAGES/agent:$GITHUB_SHA" .
           docker build -f mcp-server/Dockerfile -t "$IMAGES/docs-mcp:$GITHUB_SHA" .
-          docker build -f web/Dockerfile -t "$IMAGES/web:$GITHUB_SHA" .
+          docker build -f sandbox/Dockerfile -t "$IMAGES/sandbox-mcp:$GITHUB_SHA" .
+          # the page takes the sample pictures from the bench image
+          docker build -f web/Dockerfile --build-arg BENCH_IMAGE="$BENCH" -t "$IMAGES/web:$GITHUB_SHA" .
           docker push "$IMAGES/agent:$GITHUB_SHA"
           docker push "$IMAGES/docs-mcp:$GITHUB_SHA"
+          docker push "$IMAGES/sandbox-mcp:$GITHUB_SHA"
           docker push "$IMAGES/web:$GITHUB_SHA"
 
   # deploy runs on our own runner inside the k3s cluster ("k3s" is the name of the runner scale set).
@@ -119,7 +133,11 @@ jobs:
           sed "s|IMAGE_PLACEHOLDER|$IMAGES/agent:$GITHUB_SHA|" k8s/deployment.yaml | kubectl apply -f -
           sed "s|MCP_IMAGE_PLACEHOLDER|$IMAGES/docs-mcp:$GITHUB_SHA|" k8s/docs-mcp.yaml | kubectl apply -f -
           sed "s|WEB_IMAGE_PLACEHOLDER|$IMAGES/web:$GITHUB_SHA|" k8s/web.yaml | kubectl apply -f -
+          sed -e "s|SANDBOX_IMAGE_PLACEHOLDER|$IMAGES/sandbox-mcp:$GITHUB_SHA|" \
+              -e "s|BENCH_IMAGE_PLACEHOLDER|$IMAGES/bench:$(cat bench/VERSION)|" k8s/sandbox-mcp.yaml | kubectl apply -f -
           kubectl apply -f k8s/service.yaml -f k8s/ingress.yaml
           kubectl -n demo rollout status deployment/docs-mcp --timeout=180s
+          # longer than the others: with a new bench image the node first has to download it
+          kubectl -n demo rollout status deployment/sandbox-mcp --timeout=900s
           kubectl -n demo rollout status deployment/demo-api --timeout=180s
           kubectl -n demo rollout status deployment/web --timeout=180s

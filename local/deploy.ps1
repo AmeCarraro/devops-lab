@@ -15,6 +15,10 @@ $tag = Get-Date -Format 'yyyyMMdd-HHmmss'
 $agentImage = "devops-lab-agent:$tag"
 $mcpImage = "devops-lab-docs-mcp:$tag"
 $webImage = "devops-lab-web:$tag"
+$sandboxImage = "devops-lab-sandbox-mcp:$tag"
+# the bench image changes rarely and is large: its tag is the number in bench\VERSION,
+# and it is built and loaded only when that number is new
+$benchImage = 'devops-lab-bench:' + (Get-Content (Join-Path $root 'bench\VERSION')).Trim()
 
 function Stop-Deploy($message) { Write-Host "FAILED: $message" -ForegroundColor Red; exit 1 }
 function Assert-Ok($step) { if ($LASTEXITCODE -ne 0) { Stop-Deploy $step } }
@@ -43,13 +47,25 @@ docker build -q --build-arg APP_VERSION=$tag -t $agentImage $root
 Assert-Ok 'build agent'
 docker build -q -f (Join-Path $root 'mcp-server\Dockerfile') -t $mcpImage $root
 Assert-Ok 'build docs-mcp'
-docker build -q -f (Join-Path $root 'web\Dockerfile') -t $webImage $root
+docker build -q -f (Join-Path $root 'sandbox\Dockerfile') -t $sandboxImage $root
+Assert-Ok 'build sandbox-mcp'
+docker image inspect $benchImage 2>$null | Out-Null
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "   $benchImage is new: it downloads models and pictures, about ten minutes" -ForegroundColor Yellow
+    docker build -q -f (Join-Path $root 'bench\Dockerfile') -t $benchImage $root
+    Assert-Ok 'build bench'
+}
+# the page takes the sample pictures from the bench image
+docker build -q -f (Join-Path $root 'web\Dockerfile') --build-arg BENCH_IMAGE=$benchImage -t $webImage $root
 Assert-Ok 'build web'
 
 # No registry locally: copy the images straight into the node's containerd
 Write-Host "== 4/5 load images into the node" -ForegroundColor Cyan
 $tar = Join-Path $env:TEMP 'devops-lab-images.tar'
-docker save -o $tar $agentImage $mcpImage $webImage
+$images = @($agentImage, $mcpImage, $webImage, $sandboxImage)
+$onNode = docker exec $node ctr -n k8s.io images ls -q
+if (-not ($onNode | Select-String -SimpleMatch "/$benchImage")) { $images += $benchImage }
+docker save -o $tar @images
 Assert-Ok 'docker save'
 docker cp $tar "${node}:/tmp/images.tar"
 docker exec $node ctr -n k8s.io images import /tmp/images.tar
@@ -58,8 +74,8 @@ docker exec $node rm /tmp/images.tar
 Remove-Item $tar
 
 Write-Host "== 5/5 apply manifests" -ForegroundColor Cyan
-kubectl apply -f (Join-Path $root 'k8s\bootstrap\rbac.yaml')
-Assert-Ok 'apply rbac'
+kubectl apply -f (Join-Path $root 'k8s\bootstrap\rbac.yaml') -f (Join-Path $root 'k8s\bootstrap\sandbox.yaml')
+Assert-Ok 'apply rbac and sandbox'
 
 # Pods cannot resolve host.docker.internal (their DNS is CoreDNS, not Docker's),
 # so resolve it on the node and give them the IP of the host, where Ollama runs
@@ -79,10 +95,15 @@ Assert-Ok 'apply agent'
 Assert-Ok 'apply docs-mcp'
 (Get-Content (Join-Path $root 'k8s\web.yaml') -Raw).Replace('WEB_IMAGE_PLACEHOLDER', $webImage) | kubectl apply -f -
 Assert-Ok 'apply web'
+$sandbox = (Get-Content (Join-Path $root 'k8s\sandbox-mcp.yaml') -Raw).Replace('SANDBOX_IMAGE_PLACEHOLDER', $sandboxImage)
+$sandbox.Replace('BENCH_IMAGE_PLACEHOLDER', $benchImage) | kubectl apply -f -
+Assert-Ok 'apply sandbox-mcp'
 kubectl apply -f (Join-Path $root 'k8s\service.yaml') -f (Join-Path $root 'k8s\ingress.yaml')
 Assert-Ok 'apply service/ingress'
 kubectl -n demo rollout status deployment/docs-mcp --timeout=180s
 Assert-Ok 'rollout docs-mcp'
+kubectl -n demo rollout status deployment/sandbox-mcp --timeout=180s
+Assert-Ok 'rollout sandbox-mcp'
 kubectl -n demo rollout status deployment/demo-api --timeout=180s
 Assert-Ok 'rollout agent'
 kubectl -n demo rollout status deployment/web --timeout=180s

@@ -12,15 +12,15 @@
   "app": {
     "windows": [
       {
-        "title": "Ask the docs",
-        "width": 900,
-        "height": 720,
+        "title": "Edge Lab",
+        "width": 1320,
+        "height": 860,
         "minWidth": 380,
         "minHeight": 480
       }
     ],
     "security": {
-      "csp": "default-src 'self'; connect-src 'self' ipc: http://ipc.localhost http://127.0.0.1:8080; img-src 'self' data:"
+      "csp": "default-src 'self'; connect-src 'self' ipc: http://ipc.localhost http://127.0.0.1:8080; img-src 'self' data: http://127.0.0.1:8080"
     }
   },
   "bundle": {

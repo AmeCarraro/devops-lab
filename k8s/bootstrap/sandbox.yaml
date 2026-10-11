@@ -1,0 +1,71 @@
+# Applied by hand as cluster admin, like rbac.yaml. It builds the place where
+# pipelines run and decides who may start them. The pipeline of CI can deploy the
+# sandbox server, but it cannot change anything below: what a run is allowed to do
+# is not something a push can loosen.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: sandbox
+  labels:
+    # Kubernetes itself refuses any pod here that is not locked down:
+    # no root, no privilege escalation, no extra capabilities, no access to the node
+    pod-security.kubernetes.io/enforce: restricted
+---
+# No rule allows anything, so the pods of a run can neither call out nor be called
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: deny-all
+  namespace: sandbox
+spec:
+  podSelector: {}
+  policyTypes: [Ingress, Egress]
+---
+# The whole sandbox can never take more than this from the node, whatever is asked of it
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: sandbox
+  namespace: sandbox
+spec:
+  hard:
+    pods: "2"
+    limits.cpu: "4"
+    limits.memory: 2Gi
+---
+# The identity of the sandbox server. It lives in demo and may act only in sandbox.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: sandbox-mcp
+  namespace: demo
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: run-pipelines
+  namespace: sandbox
+rules:
+  - apiGroups: ["batch"]
+    resources: ["jobs"]
+    verbs: ["create", "get", "delete"]
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["list"]
+  - apiGroups: [""]
+    resources: ["pods/log"]
+    verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: run-pipelines
+  namespace: sandbox
+subjects:
+  - kind: ServiceAccount
+    name: sandbox-mcp
+    namespace: demo
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: run-pipelines

@@ -1,0 +1,429 @@
+/* The first view: a grid of tiles of different sizes, each telling one thing. */
+
+.bento {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 16px;
+}
+
+.bento > .card {
+  padding: 26px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.bento header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.hero {
+  grid-column: span 7;
+  justify-content: center;
+  gap: 20px !important;
+  padding: 44px 40px !important;
+  min-height: 430px;
+}
+
+.hero h1 {
+  font-family: var(--display);
+  font-size: clamp(2.5rem, 5.2vw, 4.4rem);
+  font-weight: 600;
+  letter-spacing: -0.04em;
+  line-height: 1;
+}
+
+.lead {
+  max-width: 34rem;
+  color: var(--muted);
+  font-size: 1.05rem;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  margin: 6px 0 0;
+  padding: 0;
+  list-style: none;
+  color: var(--muted);
+  font-size: 0.86rem;
+}
+
+.facts li {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.facts svg {
+  color: var(--cyan);
+  font-size: 1.05rem;
+}
+
+.sees {
+  grid-column: span 5;
+  justify-content: space-between;
+}
+
+.small {
+  font-size: 0.82rem;
+}
+
+.placeholder {
+  flex: 1;
+  display: grid;
+  place-items: center;
+  text-align: center;
+}
+
+/* ---- the pictures ---- */
+
+.mosaic {
+  display: grid;
+  grid-template-columns: repeat(var(--columns), 1fr);
+  gap: 3px;
+}
+
+.tile {
+  position: relative;
+  aspect-ratio: 1;
+  border-radius: 5px;
+  background-image: var(--sprite);
+  background-size: var(--sprite-size);
+  transition:
+    filter 0.5s,
+    opacity 0.5s,
+    transform 0.25s,
+    box-shadow 0.3s;
+}
+
+.mosaic:not(.ambient) .tile:hover {
+  z-index: 3;
+  transform: scale(2.6);
+  transition-delay: 0s !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+}
+
+.tile.unseen {
+  filter: grayscale(1) brightness(0.55);
+  opacity: 0.5;
+}
+
+.tile.right {
+  box-shadow: inset 0 0 0 2px var(--ok);
+}
+
+.tile.wrong {
+  box-shadow: inset 0 0 0 2px var(--bad);
+  filter: saturate(0.4) brightness(0.75);
+}
+
+.mosaic.ambient {
+  gap: 5px;
+}
+
+.mosaic.ambient .tile {
+  border-radius: 9px;
+  filter: saturate(0.85) brightness(0.8);
+}
+
+.mosaic.ambient .tile.focus {
+  z-index: 2;
+  filter: none;
+  transform: scale(1.22);
+  box-shadow:
+    0 0 0 2px var(--cyan),
+    0 14px 34px rgba(56, 214, 245, 0.45);
+  transition-delay: 0s !important;
+}
+
+.tile em {
+  position: absolute;
+  left: 50%;
+  bottom: -9px;
+  transform: translateX(-50%);
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--cyan);
+  color: #04222a;
+  font-size: 0.66rem;
+  font-style: normal;
+  font-weight: 700;
+  white-space: nowrap;
+  animation: rise 0.35s both;
+}
+
+/* ---- how it works ---- */
+
+.how {
+  grid-column: span 8;
+}
+
+.how ol {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 18px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* a line of light runs behind the four icons, from the first step to the last */
+.how ol::before {
+  content: '';
+  position: absolute;
+  top: 22px;
+  left: 22px;
+  right: 22px;
+  height: 2px;
+  background: linear-gradient(90deg, var(--violet), var(--cyan), var(--pink), var(--violet));
+  background-size: 300% 100%;
+  opacity: 0.55;
+  animation: shimmer 6s linear infinite;
+}
+
+.how li {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.how-icon {
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  margin-bottom: 8px;
+  border: 1px solid var(--line-strong);
+  border-radius: 14px;
+  background: var(--card-solid);
+  color: var(--cyan);
+  font-size: 1.25rem;
+}
+
+.how-number {
+  color: var(--faint);
+  font-size: 0.72rem;
+}
+
+.how h3 {
+  font-family: var(--display);
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.how p {
+  font-size: 0.86rem;
+}
+
+/* ---- the cluster ---- */
+
+.cluster {
+  grid-column: span 4;
+}
+
+.cluster dl {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+}
+
+.cluster dl div {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 11px 0;
+  border-top: 1px solid var(--line);
+}
+
+.cluster dt {
+  color: var(--muted);
+  font-size: 0.86rem;
+}
+
+.cluster dd {
+  margin: 0;
+  font-size: 0.84rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ---- the device ---- */
+
+.pod {
+  grid-column: span 4;
+}
+
+.device-art {
+  width: 100%;
+  max-height: 150px;
+}
+
+.device-art .tracks {
+  fill: none;
+  stroke: var(--line-strong);
+  stroke-width: 1.6;
+}
+
+.device-art.live .tracks {
+  stroke: var(--cyan);
+  stroke-opacity: 0.55;
+  stroke-dasharray: 5 9;
+  animation: flow 2.2s linear infinite;
+}
+
+@keyframes flow {
+  to {
+    stroke-dashoffset: -28;
+  }
+}
+
+.device-art .vias {
+  fill: var(--bg);
+  stroke: var(--line-strong);
+  stroke-width: 1.6;
+}
+
+.device-art .pins {
+  stroke: var(--muted);
+  stroke-width: 3;
+  stroke-linecap: round;
+}
+
+.device-art .body,
+.device-art .ram {
+  fill: var(--card-solid);
+  stroke: var(--line-strong);
+  stroke-width: 1.5;
+}
+
+.device-art .core,
+.device-art .cell {
+  fill: var(--raised);
+}
+
+/* The lit part of a core takes its gradient from the element itself. No fill here:
+   a rule would win over it, and a gradient named in a stylesheet is looked for in the stylesheet's own file */
+.device-art .lit {
+  filter: drop-shadow(0 0 6px rgba(56, 214, 245, 0.7));
+}
+
+.device-art.live .lit {
+  animation: glow 2.4s ease-in-out infinite;
+}
+
+@keyframes glow {
+  50% {
+    opacity: 0.55;
+  }
+}
+
+.device-art .cell.lit {
+  fill: var(--pink);
+  fill-opacity: 0.85;
+}
+
+/* ---- ask ---- */
+
+.docs {
+  grid-column: span 5;
+}
+
+.docs ul {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: auto 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.docs button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  padding: 11px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-small);
+  background: var(--raised);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 0.2s,
+    transform 0.2s;
+}
+
+.docs button svg {
+  color: var(--faint);
+  transition:
+    transform 0.2s,
+    color 0.2s;
+}
+
+.docs button:hover {
+  border-color: var(--line-strong);
+  transform: translateX(3px);
+}
+
+.docs button:hover svg {
+  color: var(--cyan);
+  transform: translateX(3px);
+}
+
+/* ---- the number ---- */
+
+.count {
+  grid-column: span 3;
+  justify-content: space-between;
+}
+
+.big {
+  font-size: clamp(3rem, 6vw, 4.6rem);
+  font-weight: 700;
+  letter-spacing: -0.05em;
+  line-height: 1;
+}
+
+.count p:last-child {
+  font-size: 0.84rem;
+}
+
+@media (max-width: 1000px) {
+  .hero,
+  .sees,
+  .how,
+  .cluster,
+  .pod,
+  .docs,
+  .count {
+    grid-column: span 12;
+  }
+
+  .hero {
+    min-height: 0;
+    padding: 30px 24px !important;
+  }
+
+  .how ol {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .how ol::before {
+    display: none;
+  }
+}

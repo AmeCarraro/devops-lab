@@ -21,10 +21,61 @@ ollama pull nomic-embed-text
 The script does by hand what the pipeline does in CI:
 
 1. starts the k3s container and waits for the node to be Ready;
-2. builds the three images (agent, docs-mcp and web) with a timestamp as tag;
+2. builds the images (agent, docs-mcp, sandbox-mcp and web) with a timestamp as tag;
 3. copies the images into the node, because there is no registry locally;
 4. writes the ConfigMap `llm-config` with the address of Ollama and the model names;
-5. applies the manifests in `k8s/` and waits for the rollout.
+5. applies the manifests in `k8s/`, the sandbox namespace included, and waits for the rollout.
+
+## The bench image
+
+The bench image is what a run in the sandbox executes: five vision models, each as fp32 and int8, and 200 evaluation pictures. The deploy script builds it only when the number in `bench\VERSION` is new, and loads it into the node only when the node does not have it.
+
+The first build takes about ten minutes. It downloads PyTorch, the weights of the models and the Imagenette pictures, about 700 MB in all, exports the models to ONNX and quantizes them. Nothing of this is installed on the PC: it happens inside the build, and only the result is kept.
+
+After a change to a file in `bench/`, raise the number in `bench\VERSION` and run the deploy script.
+
+To run one pipeline by hand, without the cluster and with the limits of a device:
+
+```powershell
+docker run --rm --cpus 1 --memory 512m devops-lab-bench:2 '{\"model\": \"resnet18\", \"precision\": \"int8\", \"input_size\": 224, \"threads\": 1}'
+```
+
+The last line it prints is `RESULT` followed by the measurements.
+
+## Measure the zoo again
+
+The pages on the model zoo and the fitting guide are not written by hand. `tools\zoo_report.py` runs every configuration through the sandbox, saves the results in `tools\measurements.json` and writes the two pages from them, numbers and advice included. Do it again after a change to the models, or on another machine.
+
+```powershell
+kubectl -n demo port-forward svc/sandbox-mcp 8002:8002
+```
+
+In another terminal, with the PC doing nothing else, because the speeds are measured on it:
+
+```powershell
+Remove-Item tools\measurements.json
+python tools\zoo_report.py measure
+python tools\zoo_report.py write
+.\local\deploy.ps1
+```
+
+The first command takes about ten minutes. The last one puts the new pages in front of the agent.
+
+## Fit a pipeline to a device
+
+Open http://127.0.0.1:8080/#/fit, choose a device and two targets, and start. Every attempt appears with the reason the model gave, its measurements and a mark on the chart.
+
+The same from the command line. The reply is one JSON object per line, as the search goes on:
+
+```powershell
+curl.exe -N http://127.0.0.1:8080/api/fit/stream -H "Content-Type: application/json" -d '{\"device\": {\"cpu\": 1, \"memory_mb\": 512}, \"targets\": {\"min_fps\": 30, \"min_accuracy\": 85}}'
+```
+
+To watch the runs from the side of Kubernetes while a search is going on:
+
+```powershell
+kubectl -n sandbox get jobs,pods --watch
+```
 
 ## Change the chat model
 
@@ -59,7 +110,9 @@ Node.js is not installed on the PC: `npm.ps1` runs npm in a container, inside `w
 .\npm.ps1 run dev
 ```
 
-`run dev` serves the page on http://127.0.0.1:5173 and reloads it when a file in `web/src` changes. The API still comes from the local cluster, so the cluster must be running.
+`run dev` serves the page on http://127.0.0.1:5173 and reloads it when a file in `web/src` changes. The API and the sample pictures still come from the local cluster, so the cluster must be running.
+
+The page is made of one file per view in `web/src`: `Home.tsx`, `Fit.tsx` and `Ask.tsx`, each with a stylesheet of the same name. `index.css` holds the colors, the frame and the pieces they share. `fit.ts` holds the logic of the Fit view that is not drawing, and has its own tests.
 
 ## Work on the desktop app
 
@@ -85,6 +138,7 @@ $env:KUBECONFIG = "local\kubeconfig\kubeconfig.yaml"
 kubectl -n demo get pods
 kubectl -n demo logs deploy/demo-api
 kubectl -n demo logs deploy/docs-mcp
+kubectl -n demo logs deploy/sandbox-mcp
 ```
 
 ## Stop the cluster
@@ -110,7 +164,7 @@ pip install -r requirements-dev.txt
 pytest
 ```
 
-The tests do not need Ollama: the LLM is replaced by a scripted fake. The tests of the web page run with `.\npm.ps1 test`.
+The tests need neither Ollama nor a cluster: the LLM is replaced by a scripted fake, and the sandbox by a fake that answers from a table. The tests of the web page run with `.\npm.ps1 test`.
 
 ## Change the documentation
 

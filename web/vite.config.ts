@@ -8,8 +8,11 @@ export default defineConfig({
   clearScreen: false,
   server: {
     host: true,
-    // In development the page comes from Vite and the API from the cluster
-    proxy: { '/api': process.env.API_URL ?? 'http://127.0.0.1:8080' },
+    // In development the page comes from Vite, the API and the sample pictures from the cluster
+    proxy: {
+      '/api': process.env.API_URL ?? 'http://127.0.0.1:8080',
+      '/samples': process.env.API_URL ?? 'http://127.0.0.1:8080',
+    },
     watch: {
       // the native side is rebuilt by Tauri, not by Vite
       ignored: ['**/src-tauri/**'],

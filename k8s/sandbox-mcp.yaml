@@ -1,0 +1,70 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sandbox-mcp
+  namespace: demo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: sandbox-mcp
+  template:
+    metadata:
+      labels:
+        app: sandbox-mcp
+    spec:
+      # the identity that may create Jobs in the sandbox namespace (k8s/bootstrap/sandbox.yaml)
+      serviceAccountName: sandbox-mcp
+      imagePullSecrets:
+        - name: ghcr
+      initContainers:
+        # Does nothing, on purpose: starting it makes the node download the bench image now,
+        # while the registry password of the deploy is still valid. The runs find it already there.
+        - name: fetch-bench-image
+          image: BENCH_IMAGE_PLACEHOLDER
+          command: ["true"]
+      containers:
+        - name: mcp
+          # replaced by the pipeline with the image built for the commit
+          image: SANDBOX_IMAGE_PLACEHOLDER
+          ports:
+            - containerPort: 8002
+          env:
+            - name: BENCH_IMAGE
+              value: BENCH_IMAGE_PLACEHOLDER
+            - name: SANDBOX_NAMESPACE
+              value: sandbox
+          lifecycle:
+            preStop:
+              # same reason as in the agent: no dropped requests during a rollout
+              sleep:
+                seconds: 5
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8002
+            initialDelaySeconds: 3
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8002
+            initialDelaySeconds: 10
+          resources:
+            requests:
+              cpu: 20m
+              memory: 96Mi
+            limits:
+              memory: 192Mi
+---
+# No ingress route leads here: only the agent, inside the cluster, can start a run
+apiVersion: v1
+kind: Service
+metadata:
+  name: sandbox-mcp
+  namespace: demo
+spec:
+  selector:
+    app: sandbox-mcp
+  ports:
+    - port: 8002
+      targetPort: 8002
