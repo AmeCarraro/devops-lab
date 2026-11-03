@@ -1,0 +1,28 @@
+# Values of the prometheus-pushgateway chart (version in VERSION, next to this file).
+# Prometheus pulls its metrics from services that are always up. A batch job, such as the
+# evaluation of the agent, ends before Prometheus could read it: it pushes its numbers to
+# the Pushgateway instead, which keeps the last ones and is read like any other target.
+
+fullnameOverride: pushgateway
+
+serviceMonitor:
+  enabled: true
+  namespace: monitoring
+  # keep the labels the job pushed (job="agent-eval", model=...) instead of the
+  # labels of the Pushgateway pod
+  honorLabels: true
+
+# reachable from the PC (local cluster) or through the SSH tunnel (EC2), like Grafana
+ingress:
+  enabled: true
+  className: traefik
+  pathType: Prefix
+  hosts: [pushgateway.localhost]
+
+# no volume: a restart forgets the last scores, and the next evaluation pushes them again
+resources:
+  requests:
+    cpu: 5m
+    memory: 16Mi
+  limits:
+    memory: 64Mi

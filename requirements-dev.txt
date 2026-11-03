@@ -2,3 +2,5 @@
 -r mcp-server/requirements.txt
 -r sandbox/requirements.txt
 pytest>=8,<9
+# the evaluation in eval/ validates cases, replies and the judge with it
+pydantic>=2,<3

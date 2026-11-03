@@ -146,3 +146,35 @@ jobs:
           kubectl -n demo rollout status deployment/sandbox-mcp --timeout=900s
           kubectl -n demo rollout status deployment/demo-api --timeout=180s
           kubectl -n demo rollout status deployment/web --timeout=180s
+
+  # The quality gate: the fixed questions of eval/cases.json go to the version just deployed,
+  # with the real model. Below the minimum pass rate the pipeline turns red. The scores also
+  # go to the Pushgateway, so Grafana shows them next to the latency and the errors.
+  eval:
+    needs: deploy
+    runs-on: k3s
+    concurrency: deploy
+    timeout-minutes: 60
+    permissions:
+      contents: read
+    env:
+      MIN_PASS: ${{ vars.EVAL_MIN_PASS || '0.65' }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Evaluate
+        run: |
+          pip install -q httpx2 'prometheus-client>=0.21,<1' 'pydantic>=2,<3'
+          python eval/evaluate.py \
+            --url http://demo-api.demo.svc.cluster.local \
+            --ollama "${{ vars.OLLAMA_URL }}" \
+            --pushgateway http://pushgateway.monitoring.svc.cluster.local:9091 \
+            --min-pass "$MIN_PASS" --out eval-report.json | tee eval.txt
+          { echo '```'; tail -n 3 eval.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: eval-report
+          path: eval-report.json

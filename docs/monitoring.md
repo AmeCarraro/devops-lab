@@ -12,6 +12,7 @@ One Helm chart, kube-prometheus-stack, installs everything in the namespace `mon
 - **node-exporter** measures the node: CPU, memory, disk, network.
 - **kube-state-metrics** measures the Kubernetes objects: pods, restarts, rollouts.
 - The **Prometheus Operator** turns the resources `ServiceMonitor` and `PrometheusRule` into the configuration of Prometheus.
+- The **Pushgateway**, a second chart (`k8s/monitoring/pushgateway/`), keeps the scores of the last [evaluation](evaluation.md). The evaluation is a batch job that ends before Prometheus could read it, so it pushes its numbers there.
 
 k3s runs the scheduler, the controller manager and the proxy inside a single process, and keeps its state in SQLite instead of etcd. These components have no endpoint of their own, so the values turn off their scraping and their default alerts. Left on, their targets would be down forever and their alerts would always fire.
 
@@ -78,13 +79,14 @@ The tool name of `agent_tool_calls_total` comes from the model. It is cut to 40 
 
 The dashboard is `k8s/monitoring/dashboards/agent.json`. The deploy puts it in the ConfigMap `dashboard-agent` with the label `grafana_dashboard=1`. A sidecar container of Grafana watches for ConfigMaps with that label in every namespace and loads them. A change to the file reaches Grafana with the next deploy, without a click.
 
-It has five rows:
+It has six rows:
 
 1. **At a glance**: questions in the last hour, the share of API errors, the answer time that 95% of the runs stay under, the wait for the first token, the share of searches that found nothing, the replicas up.
 2. **API**: requests, errors and time to first byte, by route.
 3. **LLM**: duration of the calls, tokens per second, time to first token, calls by outcome, prompt tokens per call.
 4. **Agent and search**: runs by how they ended, run duration, steps and excerpts per run, tool calls by result, duration of the MCP tools.
 5. **Resources**: CPU and memory of the pods of the agent and of the docs server.
+6. **Evaluation**: the scores of the last evaluation and how they changed, from the Pushgateway.
 
 The kube-prometheus-stack chart also installs its own dashboards, for the node, the pods and the namespaces.
 

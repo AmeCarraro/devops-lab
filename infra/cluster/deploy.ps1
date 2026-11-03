@@ -17,6 +17,7 @@ $mcpImage = "devops-lab-docs-mcp:$tag"
 $webImage = "devops-lab-web:$tag"
 $benchImage = 'devops-lab-bench:' + (Get-Content (Join-Path $root 'bench\VERSION')).Trim()
 $monitoringChart = (Get-Content (Join-Path $root 'k8s\monitoring\VERSION')).Trim()
+$pushgatewayChart = (Get-Content (Join-Path $root 'k8s\monitoring\pushgateway\VERSION')).Trim()
 
 # a new node gets a new host key: accept it the first time, in a file kept apart for the lab
 $ssh = @('-i', "$HOME\.ssh\devops-lab", '-o', 'StrictHostKeyChecking=accept-new',
@@ -60,6 +61,8 @@ kubectl -n monitoring get secret grafana-admin > /dev/null 2>&1 ||
     --from-literal=admin-password="`$(openssl rand -base64 18)"
 helm upgrade --install monitoring oci://ghcr.io/prometheus-community/charts/kube-prometheus-stack \
   --version $monitoringChart --namespace monitoring -f /tmp/devops-lab/k8s/monitoring/values.yaml --wait --timeout 10m
+helm upgrade --install pushgateway oci://ghcr.io/prometheus-community/charts/prometheus-pushgateway \
+  --version $pushgatewayChart --namespace monitoring -f /tmp/devops-lab/k8s/monitoring/pushgateway/values.yaml --wait --timeout 5m
 "@
 Assert-Ok 'helm monitoring'
 

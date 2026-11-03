@@ -21,6 +21,8 @@ $sandboxImage = "devops-lab-sandbox-mcp:$tag"
 $benchImage = 'devops-lab-bench:' + (Get-Content (Join-Path $root 'bench\VERSION')).Trim()
 # Prometheus, Alertmanager and Grafana come from one Helm chart, at the version in this file
 $monitoringChart = (Get-Content (Join-Path $root 'k8s\monitoring\VERSION')).Trim()
+# the Pushgateway, where the evaluation leaves its scores for Prometheus
+$pushgatewayChart = (Get-Content (Join-Path $root 'k8s\monitoring\pushgateway\VERSION')).Trim()
 
 function Stop-Deploy($message) { Write-Host "FAILED: $message" -ForegroundColor Red; exit 1 }
 function Assert-Ok($step) { if ($LASTEXITCODE -ne 0) { Stop-Deploy $step } }
@@ -64,6 +66,12 @@ docker run --rm --network "container:$node" `
     alpine/helm:4.3.0 upgrade --install monitoring oci://ghcr.io/prometheus-community/charts/kube-prometheus-stack `
     --version $monitoringChart --namespace monitoring -f /values/values.yaml --wait --timeout 10m
 Assert-Ok 'helm monitoring'
+docker run --rm --network "container:$node" `
+    -v "${PSScriptRoot}\kubeconfig:/kube:ro" -e KUBECONFIG=/kube/kubeconfig.yaml `
+    -v "$(Join-Path $root 'k8s\monitoring'):/values:ro" `
+    alpine/helm:4.3.0 upgrade --install pushgateway oci://ghcr.io/prometheus-community/charts/prometheus-pushgateway `
+    --version $pushgatewayChart --namespace monitoring -f /values/pushgateway/values.yaml --wait --timeout 5m
+Assert-Ok 'helm pushgateway'
 
 Write-Host "== 4/6 build $tag" -ForegroundColor Cyan
 docker build -q --build-arg APP_VERSION=$tag -t $agentImage $root

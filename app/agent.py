@@ -46,6 +46,9 @@ RESEARCH = (
 
 ANSWER = (
     "You answer a question about the technical documentation of a software project, "
+    # Measured with eval/ on 2026-11-03: asking granite4.1:3b to end every sentence with its
+    # citation made it answer "[1]" and nothing else (pass rate 71% -> 29%), so the citation
+    # rule stays this short
     "using only the excerpts you are given. Cite them with their number like [1]. Be brief. "
     "Copy commands exactly, in a code block. "
     "Do not add commands, links or examples that are not in the excerpts. "

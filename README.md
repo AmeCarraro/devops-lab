@@ -17,6 +17,7 @@ A small agent platform, built to learn how AI workloads are deployed and operate
 | Kubernetes | `k8s/`, `local/` | Manifests for the services and the sandbox, and a k3s cluster that runs inside Docker. |
 | CI/CD | `.github/workflows/`, `runner/` | GitHub Actions. The deploy job runs on a self-hosted runner inside the cluster. |
 | Monitoring | `app/metrics.py`, `k8s/monitoring/` | Prometheus metrics of the API, the LLM and the research runs; Prometheus, Grafana with a dashboard, and alerts, all kept as code. |
+| Evaluation | `eval/` | 28 fixed questions scored on retrieval, citations, facts and honest "not covered" (LLM judge with a pydantic schema); a gate in the pipeline and a row in Grafana. |
 | AWS | `infra/` | Terraform for a single-node cluster with Ollama on EC2, its state in S3, and CloudWatch alarms. |
 
 ## Run it locally
@@ -37,6 +38,7 @@ The first run builds the bench image, which takes about ten minutes. Then open h
 - [Local development](docs/local-development.md)
 - [Pipeline and AWS](docs/deployment.md), with the current status of both
 - [Monitoring](docs/monitoring.md): the metrics, the dashboard and the alerts
+- [Evaluation](docs/evaluation.md): how good the answers are, as a number the pipeline checks
 - [Troubleshooting](docs/troubleshooting.md)
 
 These pages are also what the agent reads: it answers questions from them, and it looks up the models and the settings in them before it chooses a configuration.

@@ -15,3 +15,6 @@ infra/cluster/backend.hcl
 
 # the sample pictures come from the bench image, not from the repository
 web/public/samples/
+
+# written by eval/evaluate.py --out
+eval-*.json
