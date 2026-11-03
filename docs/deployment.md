@@ -1,6 +1,6 @@
 # Pipeline and AWS
 
-Status: the pipeline works end to end against the local cluster. A push to `main` is tested and built on GitHub, then deployed by the runner inside the cluster. Nothing has been created on AWS yet: `terraform validate` passes, but the AWS part has never been applied.
+Status: the pipeline works end to end against the local cluster. A push to `main` is tested and built on GitHub, then deployed by the runner inside the cluster. `infra/state` and `infra/cluster` were applied on 2026-11-03 in `eu-north-1`: the node booted, `infra\cluster\deploy.ps1` deployed the agent and the monitoring stack, every Prometheus target was up, and a research run took about 5 minutes on the CPU of the node. `infra/budget` has never been applied.
 
 ## Pipeline
 
@@ -83,24 +83,60 @@ Nothing. A private repository on the free plan includes 2,000 minutes per month 
 
 ## AWS
 
-Terraform runs in a container through `tf.ps1`, so nothing is installed on the PC.
+Terraform runs in a container through `tf.ps1`, so nothing is installed on the PC. There are three stacks, each in its folder under `infra/`.
 
-- `infra/budget`: a monthly cost budget of 5 USD with email alerts at 40% and 80% of actual spend and at 100% of forecast spend. Apply it once and leave it. The alerts arrive hours late and do not stop the spending.
-- `infra/cluster`: one EC2 instance `t3.small` with k3s installed at first boot, and a security group that accepts SSH and HTTP only from your IP address.
-
-```powershell
-.\tf.ps1 budget apply
-.\tf.ps1 cluster plan
-.\tf.ps1 cluster apply
-.\tf.ps1 cluster destroy
-```
+- `infra/state`: the S3 bucket that keeps the Terraform state of the cluster. It keeps every version of the state for 30 days, encrypts it, and refuses any request that is not HTTPS. It is applied once, and its own state stays in its folder, because a bucket cannot hold the state of the stack that creates it. It also writes `infra/cluster/backend.hcl`, the settings of the backend of the cluster. That file and the local state are git-ignored: they name the account.
+- `infra/cluster`: one EC2 instance in the default VPC, `m7i-flex.large` with 2 vCPU and 8 GB. At first boot it installs k3s, Helm and Ollama, and pulls the two models. The security group accepts SSH and HTTP only from your IP address. The IAM role of the instance allows only Session Manager. The state is in S3 with a lock file next to it (`use_lockfile`), so two runs cannot change the cluster at the same time. CloudWatch alarms and a dashboard are in `monitoring.tf`.
+- `infra/budget`: a monthly cost budget of 5 USD with email alerts at 40% and 80% of actual spend and at 100% of forecast spend. Apply it once and leave it. The alerts arrive hours late and do not stop the spending. An account that already has a budget made in the console does not need it.
 
 `init`, `validate` and `plan` create nothing. `apply` creates resources that cost money.
 
+## Sign in to AWS
+
+Accounts of the new AWS experience sign in with a Google or Builder ID login and have no access keys. The AWS CLI borrows the session of the console instead, after a sign-in in the browser:
+
+```powershell
+docker run --rm -it -v C:\Users\<you>\.aws:/root/.aws amazon/aws-cli:latest login --remote --profile lab
+```
+
+The CLI runs in a container, which has no browser, so it prints a link. Open it, sign in, and paste the code that the page shows back into the terminal. The credentials last 12 hours and renew by themselves for 90 days. `tf.ps1` asks the CLI for them at every run and hands them to Terraform through environment variables, so they are never written to the repository or shown on a command line. The profile is `lab`, or the one named in `$env:AWS_LOGIN_PROFILE`.
+
+Windows runs `.ps1` scripts only when its execution policy allows local scripts. `Get-ExecutionPolicy -List` shows it.
+
+## Create, deploy, destroy
+
+`infra/cluster/terraform.tfvars` (git-ignored) holds your public IP, for example `my_ip_cidr = "203.0.113.7/32"`. The node takes the public key `~/.ssh/devops-lab.pub`, made once with `ssh-keygen -t ed25519 -f ~/.ssh/devops-lab`.
+
+```powershell
+.\tf.ps1 state init
+.\tf.ps1 state apply           # once: the bucket for the state
+.\tf.ps1 cluster init          # reads backend.hcl
+.\tf.ps1 cluster plan
+.\tf.ps1 cluster apply
+.\infra\cluster\deploy.ps1     # the app and the monitoring stack
+.\tf.ps1 cluster destroy       # at the end of every session
+```
+
+`infra\cluster\deploy.ps1` waits for the first boot to finish, installs the monitoring stack with Helm, builds the images of the agent, the docs server and the page, copies them to the node over SSH, and applies the manifests with the same steps as the deploy job of the pipeline. The sandbox of the vision pipelines is not deployed on EC2: its bench image is large and the CPU of the node is busy with the LLM.
+
+The page is at `http://<public_ip>/`, open only to your IP. Grafana is not exposed: see [Monitoring](monitoring.md) for the SSH tunnel.
+
+## CloudWatch on the node
+
+CloudWatch watches the node from outside, so it still reports when the node is too broken for Prometheus, which runs on it, to say anything. Prometheus and Grafana watch the app from inside.
+
+| Alarm | When | Action |
+|---|---|---|
+| `devops-lab-node-system-check` | the system status check fails for 2 minutes: hardware or network under the node | recover: AWS moves the instance to healthy hardware, with the same ID, addresses and disk |
+| `devops-lab-node-instance-check` | the instance status check fails for 3 minutes: the operating system does not answer | reboot |
+| `devops-lab-node-cpu` | CPU above 90% for 15 minutes | none, it is a signal: on this node it means the LLM needs a GPU or a managed service |
+
+The dashboard `devops-lab` shows the CPU, the network, the status checks and the three alarms. `.\tf.ps1 cluster output cloudwatch_dashboard` prints its address. With `alert_email` set in `terraform.tfvars`, the alarms also send an email, through an SNS topic. AWS first sends a confirmation message, and nothing arrives until it is confirmed. All of this is in the CloudWatch free tier.
+
 ## Cost on AWS
 
-The instance costs about 0.03 USD per hour while it runs, disk and public IP included. Left on all day it costs about 0.70 USD per day. Run `.\tf.ps1 cluster destroy` at the end of every session.
+The instance costs about 0.10 USD per hour while it runs in Stockholm, the 30 GB disk and the public IPv4 address about 0.01 more. That is about 0.11 USD per hour, or 2.60 USD for a day left on. The S3 bucket of the state costs a fraction of a cent. Run `.\tf.ps1 cluster destroy` at the end of every session.
 
 ## The LLM on AWS
 
-There is no GPU on the `t3.small` instance and no Ollama in the cluster yet. Where the model runs on AWS is still to be decided.
+The node has no GPU: Ollama runs the chat model on its 2 vCPU. That works, and it is slow: a research run takes minutes instead of seconds, and the alert `AnswersSlow` is expected to fire. The dashboard shows where the time goes, mostly in reading the prompt. The options to go faster are an instance with a GPU or a managed model such as Amazon Bedrock.

@@ -26,6 +26,11 @@ rules:
   - apiGroups: ["", "apps", "networking.k8s.io"]
     resources: ["deployments", "replicasets", "pods", "services", "secrets", "configmaps", "ingresses"]
     verbs: ["get", "list", "watch", "create", "update", "patch"]
+  # what Prometheus should scrape and alert on travels with the app (k8s/monitoring);
+  # the monitoring stack itself is installed once by the cluster admin
+  - apiGroups: ["monitoring.coreos.com"]
+    resources: ["servicemonitors", "prometheusrules"]
+    verbs: ["get", "list", "watch", "create", "update", "patch"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding

@@ -16,7 +16,8 @@ A small agent platform, built to learn how AI workloads are deployed and operate
 | Measurements | `tools/` | A script that measures every configuration through the sandbox and writes the two pages on the models from the results. |
 | Kubernetes | `k8s/`, `local/` | Manifests for the services and the sandbox, and a k3s cluster that runs inside Docker. |
 | CI/CD | `.github/workflows/`, `runner/` | GitHub Actions. The deploy job runs on a self-hosted runner inside the cluster. |
-| AWS | `infra/` | Terraform for a single-node cluster and a cost budget. Never applied yet. |
+| Monitoring | `app/metrics.py`, `k8s/monitoring/` | Prometheus metrics of the API, the LLM and the research runs; Prometheus, Grafana with a dashboard, and alerts, all kept as code. |
+| AWS | `infra/` | Terraform for a single-node cluster with Ollama on EC2, its state in S3, and CloudWatch alarms. |
 
 ## Run it locally
 
@@ -26,7 +27,7 @@ You need Docker Desktop, and Ollama with the models `granite4.1:3b` and `nomic-e
 .\local\deploy.ps1
 ```
 
-The first run builds the bench image, which takes about ten minutes. Then open http://127.0.0.1:8080/.
+The first run builds the bench image, which takes about ten minutes. Then open http://127.0.0.1:8080/, and the Grafana dashboard at http://grafana.localhost:8080/d/devops-lab-agent.
 
 ## Documentation
 
@@ -35,6 +36,7 @@ The first run builds the bench image, which takes about ten minutes. Then open h
 - [Fitting guide](docs/fitting-guide.md): what each setting does and what to change when a target is missed
 - [Local development](docs/local-development.md)
 - [Pipeline and AWS](docs/deployment.md), with the current status of both
+- [Monitoring](docs/monitoring.md): the metrics, the dashboard and the alerts
 - [Troubleshooting](docs/troubleshooting.md)
 
 These pages are also what the agent reads: it answers questions from them, and it looks up the models and the settings in them before it chooses a configuration.

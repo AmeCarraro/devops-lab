@@ -21,10 +21,13 @@ ollama pull nomic-embed-text
 The script does by hand what the pipeline does in CI:
 
 1. starts the k3s container and waits for the node to be Ready;
-2. builds the images (agent, docs-mcp, sandbox-mcp and web) with a timestamp as tag;
-3. copies the images into the node, because there is no registry locally;
-4. writes the ConfigMap `llm-config` with the address of Ollama and the model names;
-5. applies the manifests in `k8s/`, the sandbox namespace included, and waits for the rollout.
+2. installs or upgrades the monitoring stack (Prometheus, Alertmanager, Grafana) with Helm, see [Monitoring](monitoring.md);
+3. builds the images (agent, docs-mcp, sandbox-mcp and web) with a timestamp as tag;
+4. copies the images into the node, because there is no registry locally;
+5. writes the ConfigMap `llm-config` with the address of Ollama and the model names;
+6. applies the manifests in `k8s/`, the sandbox namespace, the ServiceMonitor, the alerts and the dashboard included, and waits for the rollout.
+
+The first run of the monitoring stack downloads its images and takes a few minutes.
 
 ## The bench image
 

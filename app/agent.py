@@ -16,8 +16,11 @@ from dataclasses import dataclass, field
 import httpx2
 from mcp import Client
 
+import metrics
+
 OLLAMA_URL = os.getenv("OLLAMA_URL", "http://127.0.0.1:11434").rstrip("/")
 CHAT_MODEL = os.getenv("CHAT_MODEL", "granite4.1:3b")
+metrics.prepare(CHAT_MODEL)
 MCP_URL = os.getenv("MCP_URL", "http://127.0.0.1:8001/mcp")
 # 6144 is the largest context that keeps a 3B model entirely inside 4 GB of video memory
 NUM_CTX = int(os.getenv("NUM_CTX", "6144"))
@@ -111,26 +114,49 @@ def _payload(messages: list[dict], tools: list[dict], max_tokens: int, stream: b
 async def chat(messages: list[dict], tools: list[dict], max_tokens: int, schema: dict | None = None) -> dict:
     """One call to the LLM. With `schema`, the reply is JSON that is guaranteed to match it."""
     payload = _payload(messages, tools, max_tokens, stream=False)
+    mode = "tools"
     if schema:
         payload["format"] = schema
-    async with httpx2.AsyncClient(timeout=180) as client:
-        response = await client.post(f"{OLLAMA_URL}/api/chat", json=payload)
-        response.raise_for_status()
-        return response.json()["message"]
+        mode = "structured"
+    started = time.perf_counter()
+    try:
+        async with httpx2.AsyncClient(timeout=180) as client:
+            response = await client.post(f"{OLLAMA_URL}/api/chat", json=payload)
+            response.raise_for_status()
+            reply = response.json()
+    except Exception:
+        metrics.llm_failed(CHAT_MODEL, mode)
+        raise
+    metrics.llm_done(CHAT_MODEL, mode, time.perf_counter() - started, reply)
+    return reply["message"]
 
 
 async def chat_stream(messages: list[dict], max_tokens: int):
     """Like chat, without tools: yields the reply piece by piece while the model writes it."""
     payload = _payload(messages, [], max_tokens, stream=True)
-    async with httpx2.AsyncClient(timeout=180) as client:
-        # leaving this block early (the caller stopped listening) closes the connection,
-        # and Ollama stops generating
-        async with client.stream("POST", f"{OLLAMA_URL}/api/chat", json=payload) as response:
-            response.raise_for_status()
-            async for line in response.aiter_lines():
-                piece = json.loads(line)["message"]["content"] if line else ""
-                if piece:
-                    yield piece
+    started = time.perf_counter()
+    first = True
+    try:
+        async with httpx2.AsyncClient(timeout=180) as client:
+            # leaving this block early (the caller stopped listening) closes the connection,
+            # and Ollama stops generating
+            async with client.stream("POST", f"{OLLAMA_URL}/api/chat", json=payload) as response:
+                response.raise_for_status()
+                async for line in response.aiter_lines():
+                    reply = json.loads(line) if line else {}
+                    piece = reply.get("message", {}).get("content", "")
+                    if piece:
+                        if first:
+                            # how long the user looks at an empty answer: the reading of the prompt
+                            metrics.LLM_FIRST_TOKEN.labels(CHAT_MODEL).observe(time.perf_counter() - started)
+                            first = False
+                        yield piece
+                    if reply.get("done"):
+                        # the last line carries the token counts of the whole reply
+                        metrics.llm_done(CHAT_MODEL, "stream", time.perf_counter() - started, reply)
+    except Exception:
+        metrics.llm_failed(CHAT_MODEL, "stream")
+        raise
 
 
 async def _language(question: str) -> str:
@@ -193,11 +219,15 @@ def _excerpts(data: dict, notes: Notes) -> tuple[str, int]:
 
 async def _run_tool(mcp: Client, name: str, arguments: dict, notes: Notes) -> tuple[str, int]:
     """Call one MCP tool. Returns what the model will read and how many new excerpts it contains."""
+    started = time.perf_counter()
     try:
         result = await mcp.call_tool(name, arguments)
     except Exception as exc:
+        metrics.TOOL_SECONDS.labels(name[:40], "error").observe(time.perf_counter() - started)
         # unknown tool, bad arguments, server down: show it to the model so it can recover
         return f"Tool error: {exc}", 0
+    outcome = "error" if result.is_error else "ok"
+    metrics.TOOL_SECONDS.labels(name[:40], outcome).observe(time.perf_counter() - started)
     if result.is_error:
         return f"Tool error: {_text(result)}", 0
     data = result.structured_content or {}
@@ -206,12 +236,17 @@ async def _run_tool(mcp: Client, name: str, arguments: dict, notes: Notes) -> tu
     return _excerpts(data, notes)
 
 
-async def research(question: str, mcp_server=MCP_URL):
+def research(question: str, mcp_server=MCP_URL):
     """The whole run as a stream of events, so that a client can show progress and stop it.
 
     In order: one "step" for every tool call, "sources", the answer in "answer"
     pieces while the model writes it, and a final "done" with the summary of everything.
+    Every run is also counted in the metrics, from these same events.
     """
+    return metrics.observe_run(_research(question, mcp_server))
+
+
+async def _research(question: str, mcp_server):
     started = time.perf_counter()
     notes = Notes()
     steps: list[dict] = []

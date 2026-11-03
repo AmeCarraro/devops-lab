@@ -1,0 +1,90 @@
+# Values for the kube-prometheus-stack chart (its version is in VERSION, next to this file):
+# Prometheus, Alertmanager, Grafana, and the exporters for the node and the Kubernetes
+# objects, sized for one small k3s node. The same file serves the local cluster and EC2.
+
+# k3s runs the scheduler, the controller manager and the proxy inside its own process, and
+# keeps its state in SQLite: there are no separate endpoints to scrape, so their targets
+# would stay "down" forever and their default alerts would always fire
+kubeControllerManager:
+  enabled: false
+kubeScheduler:
+  enabled: false
+kubeProxy:
+  enabled: false
+kubeEtcd:
+  enabled: false
+
+defaultRules:
+  rules:
+    etcd: false
+    kubeControllerManager: false
+    kubeProxy: false
+    kubeSchedulerAlerting: false
+    kubeSchedulerRecording: false
+
+prometheus:
+  ingress:
+    enabled: true
+    ingressClassName: traefik
+    hosts: [prometheus.localhost]
+  prometheusSpec:
+    scrapeInterval: 15s
+    evaluationInterval: 15s
+    # a lab keeps three days: enough to compare before and after a change
+    retention: 3d
+    # Read every ServiceMonitor and PrometheusRule in the cluster, not only the chart's own:
+    # the app ships its own next to its Deployment (k8s/monitoring/servicemonitor.yaml)
+    serviceMonitorSelectorNilUsesHelmValues: false
+    podMonitorSelectorNilUsesHelmValues: false
+    ruleSelectorNilUsesHelmValues: false
+    resources:
+      requests:
+        cpu: 100m
+        memory: 400Mi
+      limits:
+        memory: 1Gi
+
+alertmanager:
+  ingress:
+    enabled: true
+    ingressClassName: traefik
+    hosts: [alertmanager.localhost]
+  alertmanagerSpec:
+    resources:
+      requests:
+        cpu: 10m
+        memory: 32Mi
+      limits:
+        memory: 128Mi
+
+# The local node is itself a container (k3s inside Docker), whose root is not a shared
+# mount, and node-exporter cannot start with the default propagation. Without propagation
+# the root of the node is still mounted read-only, there and on EC2
+prometheus-node-exporter:
+  hostRootFsMount:
+    enabled: true
+    mountPropagation: None
+
+grafana:
+  # the password is made by the deploy script and kept in this Secret, never in the repository
+  admin:
+    existingSecret: grafana-admin
+    userKey: admin-user
+    passwordKey: admin-password
+  # Anyone who reaches Grafana may look at the dashboards; changing them needs the admin login.
+  # Grafana is reachable only from this PC (local cluster) or through an SSH tunnel (EC2).
+  grafana.ini:
+    auth.anonymous:
+      enabled: true
+      org_role: Viewer
+  defaultDashboardsTimezone: browser
+  ingress:
+    enabled: true
+    ingressClassName: traefik
+    hosts: [grafana.localhost]
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      memory: 384Mi

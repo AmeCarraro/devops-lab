@@ -3,9 +3,14 @@ kind: Service
 metadata:
   name: demo-api
   namespace: demo
+  # the ServiceMonitor in k8s/monitoring finds this Service by its label
+  labels:
+    app: demo-api
 spec:
   selector:
     app: demo-api
   ports:
-    - port: 80
+    # named: the ServiceMonitor in k8s/monitoring refers to the port by this name
+    - name: http
+      port: 80
       targetPort: 8000

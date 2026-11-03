@@ -19,11 +19,13 @@ $sandboxImage = "devops-lab-sandbox-mcp:$tag"
 # the bench image changes rarely and is large: its tag is the number in bench\VERSION,
 # and it is built and loaded only when that number is new
 $benchImage = 'devops-lab-bench:' + (Get-Content (Join-Path $root 'bench\VERSION')).Trim()
+# Prometheus, Alertmanager and Grafana come from one Helm chart, at the version in this file
+$monitoringChart = (Get-Content (Join-Path $root 'k8s\monitoring\VERSION')).Trim()
 
 function Stop-Deploy($message) { Write-Host "FAILED: $message" -ForegroundColor Red; exit 1 }
 function Assert-Ok($step) { if ($LASTEXITCODE -ne 0) { Stop-Deploy $step } }
 
-Write-Host "== 1/5 Ollama on the host" -ForegroundColor Cyan
+Write-Host "== 1/6 Ollama on the host" -ForegroundColor Cyan
 try { $models = (Invoke-RestMethod http://127.0.0.1:11434/api/tags -TimeoutSec 5).models.name }
 catch { Stop-Deploy 'Ollama is not running on this PC: start it and retry' }
 foreach ($model in $ChatModel, $EmbedModel) {
@@ -32,7 +34,7 @@ foreach ($model in $ChatModel, $EmbedModel) {
     }
 }
 
-Write-Host "== 2/5 cluster" -ForegroundColor Cyan
+Write-Host "== 2/6 cluster" -ForegroundColor Cyan
 docker compose -f (Join-Path $PSScriptRoot 'compose.yaml') up -d
 Assert-Ok 'docker compose up'
 foreach ($i in 1..60) {
@@ -42,7 +44,28 @@ foreach ($i in 1..60) {
 }
 if (-not $ready) { Stop-Deploy 'k3s node not Ready' }
 
-Write-Host "== 3/5 build $tag" -ForegroundColor Cyan
+Write-Host "== 3/6 monitoring stack $monitoringChart" -ForegroundColor Cyan
+kubectl create namespace monitoring --dry-run=client -o yaml | kubectl apply -f -
+Assert-Ok 'namespace monitoring'
+# The Grafana admin password is made on the first run and lives only in the cluster
+kubectl -n monitoring get secret grafana-admin 2>$null | Out-Null
+if ($LASTEXITCODE -ne 0) {
+    $bytes = New-Object byte[] 18
+    [Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($bytes)
+    $password = [Convert]::ToBase64String($bytes)
+    kubectl -n monitoring create secret generic grafana-admin --from-literal=admin-user=admin "--from-literal=admin-password=$password"
+    Assert-Ok 'grafana password'
+}
+# Helm in a container on the network of the node, like helm.ps1. Installed the first time,
+# upgraded in place afterwards; --wait returns when Prometheus and Grafana are ready
+docker run --rm --network "container:$node" `
+    -v "${PSScriptRoot}\kubeconfig:/kube:ro" -e KUBECONFIG=/kube/kubeconfig.yaml `
+    -v "$(Join-Path $root 'k8s\monitoring'):/values:ro" `
+    alpine/helm:4.3.0 upgrade --install monitoring oci://ghcr.io/prometheus-community/charts/kube-prometheus-stack `
+    --version $monitoringChart --namespace monitoring -f /values/values.yaml --wait --timeout 10m
+Assert-Ok 'helm monitoring'
+
+Write-Host "== 4/6 build $tag" -ForegroundColor Cyan
 docker build -q --build-arg APP_VERSION=$tag -t $agentImage $root
 Assert-Ok 'build agent'
 docker build -q -f (Join-Path $root 'mcp-server\Dockerfile') -t $mcpImage $root
@@ -60,7 +83,7 @@ docker build -q -f (Join-Path $root 'web\Dockerfile') --build-arg BENCH_IMAGE=$b
 Assert-Ok 'build web'
 
 # No registry locally: copy the images straight into the node's containerd
-Write-Host "== 4/5 load images into the node" -ForegroundColor Cyan
+Write-Host "== 5/6 load images into the node" -ForegroundColor Cyan
 $tar = Join-Path $env:TEMP 'devops-lab-images.tar'
 $images = @($agentImage, $mcpImage, $webImage, $sandboxImage)
 $onNode = docker exec $node ctr -n k8s.io images ls -q
@@ -73,7 +96,7 @@ Assert-Ok 'image import'
 docker exec $node rm /tmp/images.tar
 Remove-Item $tar
 
-Write-Host "== 5/5 apply manifests" -ForegroundColor Cyan
+Write-Host "== 6/6 apply manifests" -ForegroundColor Cyan
 kubectl apply -f (Join-Path $root 'k8s\bootstrap\rbac.yaml') -f (Join-Path $root 'k8s\bootstrap\sandbox.yaml')
 Assert-Ok 'apply rbac and sandbox'
 
@@ -100,6 +123,13 @@ $sandbox.Replace('BENCH_IMAGE_PLACEHOLDER', $benchImage) | kubectl apply -f -
 Assert-Ok 'apply sandbox-mcp'
 kubectl apply -f (Join-Path $root 'k8s\service.yaml') -f (Join-Path $root 'k8s\ingress.yaml')
 Assert-Ok 'apply service/ingress'
+# What Prometheus scrapes and alerts on, and the Grafana dashboard, travel with the app
+kubectl apply -f (Join-Path $root 'k8s\monitoring\servicemonitor.yaml') -f (Join-Path $root 'k8s\monitoring\alerts.yaml')
+Assert-Ok 'apply servicemonitor/alerts'
+$dashboard = Join-Path $root 'k8s\monitoring\dashboards\agent.json'
+kubectl -n demo create configmap dashboard-agent "--from-file=$dashboard" --dry-run=client -o yaml |
+    kubectl label --local -f - grafana_dashboard=1 -o yaml | kubectl apply -f -
+Assert-Ok 'apply dashboard'
 kubectl -n demo rollout status deployment/docs-mcp --timeout=180s
 Assert-Ok 'rollout docs-mcp'
 kubectl -n demo rollout status deployment/sandbox-mcp --timeout=180s
@@ -112,3 +142,6 @@ Assert-Ok 'rollout web'
 Write-Host "`nPage: http://127.0.0.1:8080/" -ForegroundColor Green
 Write-Host "API:  http://127.0.0.1:8080/api/docs" -ForegroundColor Green
 Write-Host "MCP:  http://127.0.0.1:8080/mcp" -ForegroundColor Green
+Write-Host "Grafana:      http://grafana.localhost:8080/d/devops-lab-agent" -ForegroundColor Green
+Write-Host "Prometheus:   http://prometheus.localhost:8080/alerts" -ForegroundColor Green
+Write-Host "Alertmanager: http://alertmanager.localhost:8080" -ForegroundColor Green

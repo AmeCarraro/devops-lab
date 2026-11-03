@@ -136,6 +136,11 @@ jobs:
           sed -e "s|SANDBOX_IMAGE_PLACEHOLDER|$IMAGES/sandbox-mcp:$GITHUB_SHA|" \
               -e "s|BENCH_IMAGE_PLACEHOLDER|$IMAGES/bench:$(cat bench/VERSION)|" k8s/sandbox-mcp.yaml | kubectl apply -f -
           kubectl apply -f k8s/service.yaml -f k8s/ingress.yaml
+          # What Prometheus scrapes and alerts on, and the Grafana dashboard, travel with the app.
+          # The monitoring stack itself is installed once per cluster (docs/monitoring.md)
+          kubectl apply -f k8s/monitoring/servicemonitor.yaml -f k8s/monitoring/alerts.yaml
+          kubectl -n demo create configmap dashboard-agent --from-file=k8s/monitoring/dashboards/agent.json \
+            --dry-run=client -o yaml | kubectl label --local -f - grafana_dashboard=1 -o yaml | kubectl apply -f -
           kubectl -n demo rollout status deployment/docs-mcp --timeout=180s
           # longer than the others: with a new bench image the node first has to download it
           kubectl -n demo rollout status deployment/sandbox-mcp --timeout=900s

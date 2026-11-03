@@ -5,11 +5,13 @@ import socket
 
 from fastapi import APIRouter, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse
+from fastapi.responses import Response, StreamingResponse
+from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 from pydantic import BaseModel, Field
 
 from agent import CHAT_MODEL, ask, research
 from fit import fit, zoo
+from metrics import HTTPMetrics
 
 logger = logging.getLogger("uvicorn.error")
 
@@ -17,6 +19,10 @@ logger = logging.getLogger("uvicorn.error")
 # the web page at / and this service next to it
 app = FastAPI(title="devops-lab", docs_url="/api/docs", openapi_url="/api/openapi.json", redoc_url=None)
 api = APIRouter(prefix="/api")
+
+# Counts and times every request. Added before CORS, so CORS wraps it: the preflights
+# that CORS answers by itself never reach the metrics
+app.add_middleware(HTTPMetrics)
 
 # The page of the desktop app is not served from this address, so the browser engine
 # inside it asks for permission before calling the API. These are the origins Tauri uses;
@@ -66,6 +72,12 @@ def stream(events, what: str) -> StreamingResponse:
 @app.get("/healthz", include_in_schema=False)
 def healthz():
     return {"status": "ok"}
+
+
+@app.get("/metrics", include_in_schema=False)
+def prometheus_metrics():
+    # Read by Prometheus from inside the cluster. Outside /api, so the ingress does not route it
+    return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)
 
 
 @api.get("/info")

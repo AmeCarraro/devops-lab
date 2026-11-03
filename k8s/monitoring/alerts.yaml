@@ -1,0 +1,67 @@
+# Alerts on the agent, evaluated by Prometheus every 15 seconds and shown in Alertmanager.
+# "for" is how long a condition must hold before the alert fires: it keeps a single slow
+# answer or a pod restart from paging anyone.
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: demo-api
+  namespace: demo
+spec:
+  groups:
+    - name: demo-api
+      rules:
+        - alert: AgentDown
+          expr: up{namespace="demo", service="demo-api"} == 0
+          for: 2m
+          labels:
+            severity: critical
+          annotations:
+            summary: A replica of the agent does not answer
+            description: "{{ $labels.pod }} has not answered Prometheus on /metrics for 2 minutes."
+
+        - alert: AgentErrors
+          expr: |
+            sum(rate(http_requests_total{namespace="demo", route=~"/api/.*", status=~"5.."}[5m]))
+              / sum(rate(http_requests_total{namespace="demo", route=~"/api/.*"}[5m]))
+              > 0.05
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: More than 5% of the API requests fail
+            description: "{{ $value | humanizePercentage }} of the requests to /api answered with a 5xx in the last 5 minutes."
+
+        - alert: LLMCallsFail
+          expr: sum(rate(llm_requests_total{namespace="demo", outcome="error"}[5m])) > 0
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: Calls to the LLM fail
+            description: Ollama is down, the model is missing, or a call takes longer than 180 seconds.
+
+        - alert: AnswersSlow
+          expr: |
+            histogram_quantile(0.95,
+              sum by (le) (rate(agent_run_duration_seconds_bucket{namespace="demo"}[15m]))
+            ) > 120
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: The slowest 5% of the answers take more than 2 minutes
+            description: "95th percentile of a research run: {{ $value | humanizeDuration }}."
+
+        # A quality alert, not an infrastructure one: the service is up and fast, but the
+        # search does not find the documentation, so the answers have nothing to stand on
+        - alert: SearchFindsNothing
+          expr: |
+            sum(increase(agent_run_excerpts_bucket{namespace="demo", le="0.0"}[1h]))
+              / sum(increase(agent_run_excerpts_count{namespace="demo"}[1h]))
+              > 0.25
+            and sum(increase(agent_run_excerpts_count{namespace="demo"}[1h])) >= 4
+          labels:
+            severity: warning
+          annotations:
+            summary: A quarter of the questions found no documentation in the last hour
+            description: "{{ $value | humanizePercentage }} of the research runs collected no excerpt."

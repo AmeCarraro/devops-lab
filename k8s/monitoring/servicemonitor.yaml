@@ -1,0 +1,15 @@
+# Tells Prometheus to read /metrics of every pod behind the demo-api Service.
+# Prometheus finds the pods through the Service, so a new replica is scraped as soon as it is ready.
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: demo-api
+  namespace: demo
+spec:
+  selector:
+    matchLabels:
+      app: demo-api
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 15s
